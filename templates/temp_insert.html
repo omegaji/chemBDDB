@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!--website name-->
+  <title>ChemBDDB-Insert</title>
+  <!--website heading-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="/static/styles/styles.css">
+
+
+  <script>
+    function removeRow(n) {
+      console.log('here')
+      var tr = n.parentNode.parentNode;
+      tr.parentNode.removeChild(tr);
+    }
+    function addRow(n) {
+      console.log('adding row')
+      console.log(n)
+      allprevselected = []
+      var id = n + 1
+      $('select.properties').each(function () { //Loop all existing selects
+        //printing previously selected value 
+        allprevselected.push($(this).val())
+        console.log('logging inside ad rows')
+        console.log($(this).val())
+      });
+      console.log(allprevselected)
+      var col = '{{props}}'
+      var col_elems = $("<div/>").html(col).text();
+
+      col_elems = col_elems.replace("[", '')
+      col_elems = col_elems.replace("]", '')
+      col_elems = col_elems.replace(/'/g, '')
+      col_elems = col_elems.split(", ")
+      console.log(col_elems)
+      diff_cols = $(col_elems).not(allprevselected).get()
+
+      var str = '<tr><td><input name="2_prop" type="text" value="na" placeholder="na"></td>'
+      str = str + '<td><input name="2_unit" type="text" value="na" placeholder="na"></td>'
+      var i;
+      //for (i = 0; i < diff_cols.length; i++) {
+      //str = str + '<option id="cols_' + diff_cols[i] + '" name="cols_' + diff_cols[i] + '" value="' + diff_cols[i] + '">' + diff_cols[i] + '</option>'
+      //}
+      //str = str + '{% for prop in props %} <option id="cols_{{prop}}" name="cols_{{prop}}" value="{{prop}}">{{prop}} </option> {% endfor %} '
+      //str = str + '<tr></select></td><td><input name="2_prop" type="text" value="na"></td>'
+      //str = str +'<td><input name="2_unit" type="text" value="na" placeholder="na"></td></tr>'
+      //str = str + '<td> <input id=add_' + id + ' name="addrow" class="addbutton" type="button" onclick="addRow(' + id + ')" value="Add Row" style="background-color:#005bbb;color:#ffffff;font-family:Exo;"></td>'
+      str = str + '<td> <input id=remove_' + id + ' name="removerow" class="removebutton" type="button" onclick="removeRow(this)" value="Remove Row" style="background-color#005bbb;color_+#ffffff;font-family:Exo;"></td></tr>'
+      $('#md').append(str)
+      console.log(id)
+      var add = 'add_' + n
+      document.getElementById(add).disabled = false
+    }
+    function addRow_2(n) {
+      console.log('adding row')
+      console.log(n)
+      allprevselected = []
+      var id = n + 1
+      $('select.properties').each(function () { //Loop all existing selects
+        //printing previously selected value 
+        allprevselected.push($(this).val())
+        console.log('logging inside ad rows')
+        console.log($(this).val())
+      });
+      console.log(allprevselected)
+      var col = '{{props}}'
+      var col_elems = $("<div/>").html(col).text();
+
+      col_elems = col_elems.replace("[", '')
+      col_elems = col_elems.replace("]", '')
+      col_elems = col_elems.replace(/'/g, '')
+      col_elems = col_elems.split(", ")
+      console.log(col_elems)
+      diff_cols = $(col_elems).not(allprevselected).get()
+
+      var str = '<tr><td><select id="0" class="properties" name="prop_id_0">'
+      str = str + '<option id="cols_0P" value="cols_0P">Select column name</option>'
+      str = str + '{% for prop in props %}<option id="cols_{{prop}}" name="cols_{{prop}}" value="{{prop}}">{{prop}}</option>{% endfor %}'
+      str = str + '</select></td>'
+      str = str + '<td><input name="2_prop" type="text" value="na" placeholder="na"></td>'
+      str = str + '<td><input name="2_unit" type="text" value="na" placeholder="na"></td>'
+      var i;
+      //for (i = 0; i < diff_cols.length; i++) {
+      //str = str + '<option id="cols_' + diff_cols[i] + '" name="cols_' + diff_cols[i] + '" value="' + diff_cols[i] + '">' + diff_cols[i] + '</option>'
+      //}
+      //str = str + '{% for prop in props %} <option id="cols_{{prop}}" name="cols_{{prop}}" value="{{prop}}">{{prop}} </option> {% endfor %} '
+      //str = str + '<tr></select></td><td><input name="2_prop" type="text" value="na"></td>'
+      //str = str +'<td><input name="2_unit" type="text" value="na" placeholder="na"></td></tr>'
+      //str = str + '<td> <input id=add_' + id + ' name="addrow" class="addbutton" type="button" onclick="addRow(' + id + ')" value="Add Row" style="background-color:#005bbb;color:#ffffff;font-family:Exo;"></td>'
+      str = str + '<td> <input id=remove_' + id + ' name="removerow" class="removebutton" type="button" onclick="removeRow(this)" value="Remove Row" style="background-color#005bbb;color_+#ffffff;font-family:Exo;"></td></tr>'
+      $('#md').append(str)
+      console.log(id)
+      var add = 'add_' + n
+      document.getElementById(add).disabled = false
+    }
+  </script>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #005bbb;height:80px">
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <a href="/">
+        <img src="../static/chembddb_logo.png" alt="logo" style='width:130px;background-color:#ffffff;float: right;
+          height: 80px;'>
+      </a>
+      <ul class="navbar-nav" style="margin-top: 15px;">
+        <li class="nav-item">
+          <a class="nav-link" style="color:#ffffff;font-family:Exo;">Connect</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/setup" style="color:#ffffff;font-family:Exo;" target='_blank'>Create</a>
+        </li>
+        <li class="nav-item active">
+          <a class="nav-link" style="color:#ffffff;font-family:Exo;">Insert <span class="sr-only">(current)</span></a>
+        </li>
+        <li class="nav-item ">
+          <a class="nav-link" href='/search' style="color:#ffffff;font-family:Exo;" target='_blank'>Search </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href='/delete' style="color:#ffffff;font-family:Exo;" target='_blank'>Delete</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="insert">
+    <h3 style="font-family:Exo;">Insert</h3>
+    {% if init %}
+    <form name="insert_data_config" enctype="multipart/form-data" method="POST">
+      <div class="form-group">
+        <table class="table table-bordered" border="0" style="align-content:center;font-family: Exo;">
+          <col width="240">
+          <col width="240">
+          <col width="240">
+          <tr>
+            <td>
+              <label for="dbname" style="font-family:Exo;">Database Name:</label>
+              <select name="dbname">
+                {% for dbname in all_dbs %}
+                <option id="dbname" value="{{dbname[0]}}">{{dbname[0]}}</option>
+                {% endfor %}
+              </select>
+              <small id="smiles" class="form-text text-muted" style="font-family:Exo;">Enter the name of the database
+                you want to insert data into:</small>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="form-group" style="font-family:Exo;">
+                <label for="data_file_label">Data file (csv)</label>
+                <input name="data_file" type="file" id="data_file" required>
+              </div>
+            </td>
+            <td>
+              <div class="form-group" style="font-family:Exo;">
+                <p>DES or Molecule?</p>
+                <input name="des_status" type="radio" id="des" value="des" required>
+                <label for="des">DES</label>
+                <br>
+                <input name="des_status" type="radio" id="molecule" value="molecule" required>
+                <label for="molecule">Molecule</label>
+              </div>
+            </td>
+            <td>
+              <div class="form-group" sytle="font-family:Exo;">
+                <p>Is all property data stored in a single column, or does each property have its own?</p>
+                <input name="prop_store" type="radio" id="single_col" value="single_col" required>
+                <label for="single_col">Single column</label>
+                <input name="prop_store" type="radio" id="multi_col" value="multi_col" required>
+                <label for="multi_col">Multiple columns</label>
+              </div>
+            </td>
+            <td>
+              <div class="form-group" sytle="font-family:Exo;">
+                <p>Is there simulation data stored in this csv file?</p>
+                <input name="sim_status" type="radio" id="yes_sim" value="yes_sim" required>
+                <label for="yes_sim">Yes</label>
+                <input name="sim_status" type="radio" id="no_sim" value="no_sim" required>
+                <label for="no_sim">No</label>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="form-group" sytle="font-family:Exo;">
+                <p>Is there molecular weight data stored in this csv file?</p>
+                <input name="mw_meta" type="radio" id="yes_mw" value="yes_mw" required>
+                <label for="mw_meta">Yes</label>
+                <input name="mw_meta" type="radio" id="no_mw" value="no_mw" required>
+                <label for="no_mw">No</label>
+              </div>
+            </td>
+            <td>
+              <button type="submit" name="upload_data" value="Upload" class="btn btn-primary"
+                style="background-color:#005bbb;color:#ffffff;font-family:Exo;">Upload</button>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </form>
+    {% endif %}
+    <form name="config" action="" method="POST">
+      {% if data_validated %}
+      <h4 style="font-family:Exo">Step 1: Molecule Identifiers</h4>
+      {% if des_status %}
+      <h5 style="font-family:Exo">Select columns in your file that contain the HBA and HBD IDs and Ratios</h5>
+
+      <div class="row">
+        <div>
+          <table class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+            <col width="240">
+            <col width="240">
+            <col width="240">
+            <tr>
+              <td>
+                <h5>HBA</h5>
+              </td>
+              <td>
+                <h5>HBA Column</h5>
+              </td>
+              {% if mw_meta %}
+              <td>
+                <h5>HBA MW</h5>
+              </td>
+              {% endif %}
+            </tr>
+            <tr>
+              <td>
+                {% for HBA_ident in
+                ['SMILES','Std_InChI','Std_InChI_Key','IUPAC_name','Other_name','CAS_registry_no','Chemical_formula'] %}
+            <tr>
+              <td><input id='1' type="checkbox" name="{{HBA_ident}}col" value="{{HBA_ident}}">&nbsp;&nbsp;{{HBA_ident}}
+              </td>
+              <td>
+                <select id="{{HBA_ident}}_id" class="HBA_identifier" name="{{HBA_ident}}_id">
+                  <option id="cols_0A" value="cols_0A">Select column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}"> {{c}}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              {% if mw_meta %}
+              <td>
+                <select id="{{HBA_ident}}_mw" class="HBA_MW" name="{{HBA_ident}}_mw">
+                  <option id="cols_0A_MW" value="cols_0A_MW">Select column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}">{{c}}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              {% endif %}
+            </tr>
+            </td>
+            {% endfor %}
+            </tr>
+            <tr>
+              <td>
+                <h5>HBD</h5>
+              </td>
+              <td>
+                <h5>HBD Column</h5>
+              </td>
+              {% if mw_meta %}
+              <td>
+                <h5>HBD MW</h5>
+              </td>
+              {% endif %}
+            </tr>
+            <tr>
+              <td>
+                {% for HBD_ident in
+                ['SMILES','Std_InChI','Std_InChI_Key','IUPAC_name','Other_name','CAS_registry_no','Chemical_formula'] %}
+            <tr>
+              <td><input id='2' type="checkbox" name="{{HBD_ident}}col" value="{{HBD_ident}}">&nbsp;&nbsp;{{HBD_ident}}
+              </td>
+              <td>
+                <select id="{{HBD_ident}}_id" class="HBD_identifier" name="{{HBD_ident}}_id">
+                  <option id="cols_0B" value="cols_0B">Select column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}">{{c}}</option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            </td>
+            {% if mw_meta %}
+            <td>
+              <select id="{{HBD_ident}}_mw" class="HBD_MW" name="{{HBD_ident}}_mw">
+                <option id="cols_0B_MW" value="cols_0B_MW">Select column name</option>
+                {% for c in cols %}
+                <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}">{{c}}</option>
+                {% endfor %}
+              </select>
+            </td>
+            {% endif %}
+            {% endfor %}
+            </tr>
+            <tr>
+              <td>
+                <h6>Ratio
+              </td>
+              </h6>
+            </tr>
+            <tr>
+              <td>
+                <select id="{{ratio_col}}_id" class='ratio_col' name="{{ratio_col}}_id">
+                  <option id="cols_0R" value="cols_0R">Select column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}">{{c}}</option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <h5 style="font-family:Exo;">Select columns from your file which represent molecule identifiers</h5>
+
+      <div class='row'>
+        <div class='col col-lg-6'>
+          <table class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+            <col width="240">
+            <col width="240">
+            <col width="240">
+            <tr>
+              <td>
+                <h5>Identifier</h5>
+              </td>
+              <td>
+                <h5>Column Name</h5>
+              </td>
+              {% if mw_meta %}
+              <td>
+                <h5>MW Column</h5>
+              </td>
+              {% endif %}
+            </tr>
+            {% for mol_ident in
+            ['SMILES','Std_InChI','Std_InChI_Key','IUPAC_name','Other_name','CAS_registry_no','Chemical_formula'] %}
+            <tr>
+              <td><input id='1' type="checkbox" name="{{mol_ident}}col" value={{mol_ident}}
+                  onclick="document.getElementById('{{mol_ident}}_id').disabled=!this.checked;">&nbsp;&nbsp;{{mol_ident}}
+              </td>
+              <td>
+                <select id="{{mol_ident}}_id" class=molIdentifier name="{{mol_ident}}_id" disabled>
+                  <option id="cols_0" value="cols_0">Select column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}"> {{c}} </option>
+                  {% endfor %}
+                </select>
+              </td>
+              {% if mw_meta %}
+              <td>
+                <select id="{{mol_ident}}_mw" class="mol_MW" name="{{mol_ident}}_mw">
+                  <option id="cols_0_MW" value="cols_0_MW">Select column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}">{{c}}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              {% endif %}
+            </tr>
+
+            {% endfor %}
+            {% endif %}
+            <tr>
+              <td>
+                <button type="button" class="btn btn-primary"
+                  style="background-color:#005bbb;color:#ffffff;font-family:Exo;"
+                  onClick="window.location.reload();">Reset</button>
+                <button type="submit" name="config" method="POST" class="btn btn-primary"
+                  style="background-color:#005bbb;color:#ffffff;font-family:Exo;">Proceed to Step 2: Properties</button>
+                {% if conf %}
+                <button type="submit" name="use-config" method="POST" class="btn btn-primary"
+                  style="background-color:#005bbb;color:#ffffff;font-family:Exo;">Use last configuration for Step
+                  2</button>
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+    </form>
+    {% endif %}
+    {% if props %}
+    <form name="meta-data" id="meta-data" action='' method="POST">
+      <h4 style="font-family:Exo;">Step 2: Properties</h4>
+
+      <h5 style="font-family:Exo;">Select columns from your file which represent the properties you want to enter into
+        the database</h5>
+      <table id="prop_spec1" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+        <col width="240">
+        <col width="240">
+        {% if prop_store %}
+        <tr>
+          <td>
+            <h5 style="font-family:Exo;">Property Value Column</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Property Type Column</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Property Unit Column</h5>
+          </td>
+        </tr>
+        <tr>
+          {% for i in ['value','property','unit'] %}
+          <td>
+            <select id="0_prop_store" class="properties_store" name="prop_store_id_0">
+              <option id="cols_0PS" value="cols_0PS">Select column name</option>
+              {% for prop in props %}
+              <option id="cols_{{prop}}" name="cols_{{prop}}" value="{{prop}}">{{prop}}</option>
+              {% endfor %}
+            </select>
+          </td>
+          {% endfor %}
+        </tr>
+      </table>
+      <table id="md" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+        <col width="240">
+        <col width="240">
+        <tr>
+          <td>
+            <h5 style="font-family:Exo;">Property Name</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Property Unit</h5>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <input name="2_prop" type="text" value="na" placeholder="na">
+          </td>
+          <td>
+            <input name="2_unit" type="text" value="na" placeholder="na">
+          </td>
+          <td>
+            <input id="add_0" name="addrow" class="addbutton" type="button" onclick="addRow(0)"
+              style="background-color:#005bbb;color:#ffffff;font-family:Exo;" value="Add Row">
+          </td>
+        </tr>
+      </table>
+      {% else %}
+      <table id="md" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+        <tr>
+          <td>
+            <h5 style="font-family:Exo;">Column Name</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Property Name</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Property Unit</h5>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <select id="0" class="properties" name="prop_id_0">
+              <option id="cols_0P" value="cols_0P">Select column name</option>
+              {% for prop in props %}
+              <option id="cols_{{prop}}" name="cols_{{prop}}" value="{{prop}}">{{prop}}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <input name="2_prop" type="text" value="na" placeholder="na">
+          </td>
+          <td>
+            <input name="2_unit" type="text" value="na" placeholder="na">
+          </td>
+          <td>
+            <input id="add_' + id + '" name="addrow" class="addbutton" type="button" onclick="addRow_2(' + id + ')"
+              value="Add Row" style="background-color:#005bbb;color:#ffffff;font-family:Exo;">
+          </td>
+        </tr>
+      </table>
+      {% endif %}
+      {% if sim_status %}
+      <table id="sim" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+        <tr>
+          <td>
+            <h5 style="font-family:Exo;">Method</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Functional</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Basis Set</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Forcefield</h5>
+          </td>
+        </tr>
+        <tr>
+          {% for sim in [' Method','Functional','Basis_Set','Forcefield'] %} <td>
+            <select id="1" class="sims" name="sim_id_0">
+              <option id="cols_01" value="cols_01">Select column name</option>
+              {% for prop in props %}
+              <option id="cols_{{prop}}" name="cols_{{prop}}" value="{{prop}}">{{prop}}</option>
+              {% endfor %}
+            </select>
+          </td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td>
+            <button type="submit" name="meta-data" method="POST" class="btn btn-primary"
+              style="background-color:#005bbb;color:#ffffff;font-family:Exo;">Submit</button>
+          </td>
+        </tr>
+      </table>
+      {% else %}
+      <table id="fin-submit" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+        <tr>
+          <td>
+            <button type="submit" name="meta-data" method="POST" class="btn btn-primary"
+              style="background-color:#005bbb;color:#ffffff;font-family:Exo;">Submit</button>
+          </td>
+        </tr>
+      </table>
+      {% endif %}
+    </form>
+    {% endif %}
+
+    {% if val_submit %}
+    <form name="final_md" id="final_md" action='' method="POST">
+      <table id="finished" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+        <tr>
+          <td>
+            <h5>{{msg}}</h5>
+          </td>
+        </tr>
+      </table>
+    </form>
+    {% endif %}
+
+    {% if success_msg%}
+    <h1>{{success_msg}}</h1>
+    {%endif%}
+  </div>
+</body>
+
+</html>

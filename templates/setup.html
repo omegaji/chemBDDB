@@ -1,0 +1,74 @@
+<html lang="en">
+
+<head>
+    <!-- website name -->
+    <title>Chembddb-Create</title>
+    <!-- website heading -->
+    <!-- <h2><b><font size='8'>{{title}}</font> </b></h2> -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="/static/styles/main.css">
+    <link rel="stylesheet" href="/static/styles/setup.css">
+
+    <script>
+        function get_value() {
+            var val = document.getElementById('dbname').value;
+            return val;
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="nav">
+        <a href="/setup">
+            <div class="nav-button nav-selected">⚙️ Setup</div>
+        </a>
+        <a href="/search">
+            <div class="nav-button">🔍 Search</div>
+        </a>
+        <a href="/delete">
+            <div class="nav-button">❌ Delete</div>
+        </a>
+        <a href="/temp_insert">
+            <div class="nav-button">🗳️ Insert</div>
+        </a>
+
+    </div>
+
+    <div class="setup-container">
+        <meta charset="UTF-8">
+        <form name='dbname' method='POST' class="form" action="/setup">
+            <div class="form-group">
+                <label class="db-list-title" for="dbname">Enter database name</label>
+                <input type="text" name='dbname' class="form-control" id="dbname" value='{{dbname}}'
+                    placeholder="Enter database name here">
+            </div>
+            <button type="create" name='create' class="create-button">Create</button>
+        </form>
+        {%if all_dbs %}
+        <p class="db-list-title" href="#" id="navbarDropdownMenuLink">
+            All Databases
+        </p>
+        {% endif %}
+
+        <div class="db-list" aria-labelledby="navbarDropdownMenuLink">
+            {% for adbs in all_dbs %}
+            <div class="db-item" href="#"> 🐬{{adbs[0]}}</div>
+            {% endfor %}
+        </div>
+        {% if err_msg %}
+        <div class="alert alert-danger" role="alert">
+            <a href="#" class="close" data-dismiss="alert" aria-label="close">❌</a>
+            {{err_msg}}
+        </div>
+        {% endif %}
+
+
+
+    </div>
+</body>
+
+</html>

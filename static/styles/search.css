@@ -1,0 +1,68 @@
+.search-form {
+    width: fit-content;
+    background-color: #fbd49fa1;
+    padding: 0.5rem;
+    border-radius: 1rem;
+    margin-top: 10%;
+    font-size: 1.2rem;
+    height: fit-content;
+}
+
+.search-container {
+
+    position: relative;
+    left: 9%;
+    width: 90%;
+    display: flex;
+    flex-direction: row;
+}
+
+.search-title {
+    font-size: 1.8rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    width: fit-content;
+}
+
+
+.search-item {
+    display: flex;
+    flex-direction: row;
+}
+
+.search-label {
+    background-color: #F5A3AB;
+    color: white;
+    padding: 0.3rem;
+    border-radius: 0.4rem;
+    margin-bottom: 0.4rem;
+    margin-right: 0.2rem;
+}
+
+.search-input>input,
+select {
+    padding: 0.3rem;
+    border-radius: 0.4rem;
+    margin-bottom: 0.4rem;
+    margin-right: 0.2rem;
+    border: 1px solid #645DD7;
+}
+
+.search-button {
+    width: fit-content;
+    padding: 0.2rem;
+    border-radius: 0.3rem;
+    background-color: #F1FFEB;
+    color: black
+}
+
+.search-table {
+    background-color: #88c8fc88;
+    width: fit-content;
+    margin: 0 auto;
+    margin-top: 10%;
+    border-radius: 1rem;
+    text-align: center;
+    height: fit-content;
+    padding: 1rem;
+}

@@ -1,0 +1,63 @@
+<html lang="en">
+
+<head>
+    <!-- website name -->
+    <title>Chembddb-Connect</title>
+    <!-- website heading -->
+    <!-- <h2><b><font size='8'>{{title}}</font> </b></h2> -->
+    <link rel="stylesheet" href="/static/styles/main.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script> -->
+    <link rel="stylesheet" type="text/css" href="/static/styles/connect.css">
+    <script>
+        function get_value(){
+            var val=document.getElementById('dbname').value;
+            return val;
+        }
+    </script>
+</head>
+<body>
+
+              <div class="setup">
+                    <meta charset="UTF-8">
+                    <div class="connect-header">Log in 👨‍🔬</div>
+                    <!-- <h5> All of this data will be  stored locally. If you change your host url, MySQL username or password find your credentials.dat file and change it accordingly. </h5> -->
+                    <form name='details' method="post" class="connect-form">
+                        <!-- <input id='not-first-time' type ="checkbox" name="first-time" value="yes" onclick="document.getElementById('host').disabled=!this.checked;document.getElementById('username').disabled=!this.checked;document.getElementById('password').disabled=!this.checked" >&nbsp;&nbsp;Check this box if you do not a credentials.dat file in your current working directory.  -->
+                            <div class="form-group">
+                              <label for="host" >Host</label><br>
+                              <input type="text" name='host' id="host" value='{{host}}' placeholder="127.0.0.1"  >
+                            </div>
+                            <div class="form-group">
+                              <label for="Username" >Username</label><br>
+                              <input type="text" name='username'  id="username" value='{{user}}' placeholder="MySQL username"  >
+                            </div>
+                            <div class="form-group">
+                                    <label for="password" >Password</label><br>
+                                    <input type="password" name='password'  id="password" value='{{password}}' placeholder="MySQL password"  >
+                            </div>
+                            <button type="submit" name='setup' class="submit-button">Connect</button>
+                            
+                          </form>
+                          {% if err_msg %}
+                          <div class="alert-danger" role="alert"  >
+                                <a href="#" class="close" data-dismiss="alert" aria-label="close">❌</a>
+                                {{err_msg}}
+                              </div>
+                          {% endif %}
+                          {% if success_msg %}
+                          <div class="alert-success" role="alert"  >
+                                <a href="#" class="close" data-dismiss="alert" aria-label="close">✔️</a>
+                                {{success_msg}}
+                              </div>
+                          <hr>
+                
+                            <a href='/setup' target='_blank'><button type="setup" name='setup' class="btn btn-primary" style="background-color:#005bbb;color:#ffffff;font-family:Exo;">Create</button></a>
+                            <a href='/temp_insert' target='_blank'><button type="insert" name='insert' class='btn btn-primary' style="background-color:#005bbb;color:#ffffff;font-family:Exo;" >Insert</button></a>
+                            <a href='/search' target='_blank'><button type="search" name='search' class="btn btn-primary" style="background-color:#005bbb;color:#ffffff;font-family:Exo;">Search</button></a>
+                            <a href='/delete' target='_blank'><button type="delete" name='search' class="btn btn-primary" style="background-color:#005bbb;color:#ffffff;font-family:Exo;">Delete</button></a>
+                            <!-- </form> -->
+                          {% endif %}
+                            </div>               
+</body>
+</html>
