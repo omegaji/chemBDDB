@@ -893,6 +893,7 @@ def temp_insert():
                 print('This took '+str(round((stop-start),4))+ ' seconds!')
         else:
             print('Data for Models, Functionals, Basis Sets, and Forcefields is being added!')
+
             if des_status == False:
                 insert_tuples = insert_df.to_records(index=False)
                 insert_tuples = insert_tuples.values.tolist() # execute many needs sequence of sequences to work
@@ -901,6 +902,7 @@ def temp_insert():
                 cur.executemany('INSERT INTO Value(property_id,num_value,molecule_id,model_id,functional_id,basis_id,forcefield_id) VALUES(%s,%s,%s,%s,%s,%s,%s);',(insert_tuples))
                 stop = time.time()
                 print('This took '+str(round((stop-start),4))+ ' seconds!')
+                
             else:
                 insert_tuples = insert_df.to_records(index=False)
                 insert_tuples = insert_tuples.values.tolist() # execute many needs sequence of sequences to work

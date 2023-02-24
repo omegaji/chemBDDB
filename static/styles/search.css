@@ -1,6 +1,6 @@
 .search-form {
     width: fit-content;
-    background-color: #fbd49fa1;
+    background-color: #a4caf9;
     padding: 0.5rem;
     border-radius: 1rem;
     margin-top: 10%;
@@ -31,7 +31,7 @@
 }
 
 .search-label {
-    background-color: #F5A3AB;
+    background-color: #005BBB;
     color: white;
     padding: 0.3rem;
     border-radius: 0.4rem;
@@ -52,12 +52,12 @@ select {
     width: fit-content;
     padding: 0.2rem;
     border-radius: 0.3rem;
-    background-color: #F1FFEB;
+    background-color: #E56A54;
     color: black
 }
 
 .search-table {
-    background-color: #88c8fc88;
+    background-color: #a4caf9;
     width: fit-content;
     margin: 0 auto;
     margin-top: 10%;

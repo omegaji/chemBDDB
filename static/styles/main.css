@@ -1,10 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Arvo&display=swap');
-body{
+
+body {
     background-color: white;
     font-family: 'Arvo', serif;
-    font-size:16px;
+    font-size: 16px;
 }
-.nav{
+
+.nav {
     width: 8%;
     position: absolute;
     left: 0px;
@@ -12,35 +14,39 @@ body{
     display: flex;
     flex-direction: column;
     top: 0px;
-    background-color: #fff3f4;
+    background-color: #e9f1fb;
 }
-.nav>a{
-    margin-bottom:0.5rem;
-    padding-bottom:0.51rem;
+
+.nav>a {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.51rem;
     text-decoration: none;
-    color:black;
+    color: black;
     font-size: 1.2rem;
 }
-.nav-button{
-    padding:0.8rem 1rem 0.8rem 1rem;
-    
-}
-.nav-selected{
-    background-color: #fbcfd2;
-    border-right: 2px solid #FF9F1C;
+
+.nav-button {
+    padding: 0.4rem 0.6rem 0.4rem 0.6rem;
 
 }
 
-.alert-danger{
+.nav-selected {
+    background-color: #5a9fe9;
+    border-right: 2px solid #E56A54;
+
+}
+
+.alert-danger {
     background-color: #FF5D73;
-    color:white;
+    color: white;
     font-size: 0.6rem;
     padding: 0.2rem;
     border-radius: 0.4rem;
 }
-.alert-success{
+
+.alert-success {
     background-color: #81E979;
-    color:#272D2D;
+    color: #272D2D;
     font-size: 0.6rem;
     padding: 0.2rem;
     border-radius: 0.4rem;
