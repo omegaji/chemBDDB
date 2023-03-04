@@ -18,7 +18,7 @@ try:
 except:
     from openbabel import pybel
 from itertools import cycle, islice
-
+import traceback
 from flask import send_from_directory
 
 
@@ -326,598 +326,626 @@ def temp_insert():
     """
     global all_dbs, db, data_file, cur, data,mol_ids,con,snapshot,prop_type,prop_store,sim_status,mw_cols,mw_meta
     global des_status,methods_list,functionals_list,basis_list,forcefield_list, molecule_identifiers, molecule_identifiers_cols
-    global pybel_identifiers, molecule_id, mw_cols
+    global pybel_identifiers, molecule_id, mw_cols,remaining_cols,snapshot_cols
     mi_cols = []
     cur.execute('show databases;')
     all_dbs_tup = cur.fetchall()
+    
     all_dbs = []
     for i in all_dbs_tup:
         if '_chembddb' in i[0] and 'unit_list' not in i[0]:
             m=i[0]
             all_dbs.append((m[:-9],))
+    original_all_dbs=all_dbs.copy()
     if request.method == 'POST' and 'upload_data' in request.form:
-        config_options = request.form
-        config_options=config_options.to_dict(flat=False)
-        db = config_options['dbname'][0]
-        files = request.files
-        cur.execute('USE {}_chembddb;'.format(db))
-        cur.execute('SELECT ID, conf from Configuration')
-        confs = cur.fetchall()
-        conf = False
-        if len(confs) > 0:
-            conf = True
-        present = []
-        identifiers = ['SMILES','Standard_Inchi_Key','Standard_Inchi','Chemical_Formula','IUPAC_Name','Other_name','CAS_Registry_Number']
-        snapshot = []
-        all_dbs_tup=cur.fetchall()
-        all_dbs=[]
-        for i in all_dbs_tup:
-            if '_chembddb' in i[0] and 'unit_list' not in i[0]:
-                m=i[0]
-                all_dbs.append((m[:-9],))
-        data_file = files['data_file']
-        if data_file is not None:
-            data_file.seek(0)
-            data = pd.read_csv(data_file)
-        
-        cols = list(data.columns)
-        pybel_identifiers = {'smiles':'smi','standard_inchi_key':'inchikey','standard_inchi':'inchi'}
-        #prop_val = []
-        #unit_val = []
-        molec_id = []
-        id_col_name = []
-        mol_ids = {}
-        for id in identifiers:
-            cur.execute('SELECT COUNT(DISTINCT '+ id +') FROM MOLECULE;')
-            counts = cur.fetchall()
-            if counts[0][0] > 1:
-                present.append(id)
-        if present !=[]:
-            snapshot = [', '.join(p for p in present)]
-            snapshot = [snapshot[0].split(',')]
-            # check which properties are present in the database
-
-            cur.execute('SELECT Property_str, Unit from Property;')
-            properties = cur.fetchall()
-            properties = ', '.join(i[0]+'('+i[1]+')' for i in properties)
-            properties.replace(', na','')
-            properties.replace('na,','')
-            properties.replace('na','')
-
-            properties = properties.split(',')
-            snapshot.append(properties)
+        try:
+            config_options = request.form
+            config_options=config_options.to_dict(flat=False)
+            db = config_options['dbname'][0]
+            files = request.files
+            cur.execute('USE {}_chembddb;'.format(db))
+            cur.execute('SELECT ID, conf from Configuration')
+            confs = cur.fetchall()
+            conf = False
+            if len(confs) > 0:
+                conf = True
+            present = []
+            identifiers = ['SMILES','Standard_Inchi_Key','Standard_Inchi','Chemical_Formula','IUPAC_Name','Other_name','CAS_Registry_Number']
+            snapshot = []
+            all_dbs_tup=cur.fetchall()
+            all_dbs=[]
+            for i in all_dbs_tup:
+                if '_chembddb' in i[0] and 'unit_list' not in i[0]:
+                    m=i[0]
+                    all_dbs.append((m[:-9],))
+            data_file = files['data_file']
+            if data_file is not None:
+                data_file.seek(0)
+                data = pd.read_csv(data_file)
             
-            cur.execute('SELECT method_name from Model;')
-            methods = cur.fetchall()
-            methods = ', '.join(i[0] for i in methods)
-            methods = methods.replace(', na','')
-            methods = methods.replace ('na,','')
-            methods = methods.replace('na','')
+            cols = list(data.columns)
+            pybel_identifiers = {'smiles':'smi','standard_inchi_key':'inchikey','standard_inchi':'inchi'}
+            #prop_val = []
+            #unit_val = []
+            molec_id = []
+            id_col_name = []
+            mol_ids = {}
+            for id in identifiers:
+                cur.execute('SELECT COUNT(DISTINCT '+ id +') FROM MOLECULE;')
+                counts = cur.fetchall()
+                if counts[0][0] > 1:
+                    present.append(id)
+            if present !=[]:
+                snapshot = [', '.join(p for p in present)]
+                snapshot = [snapshot[0].split(',')]
+                # check which properties are present in the database
 
-            methods = methods.split(',')
-            snapshot.append(methods)
+                cur.execute('SELECT Property_str, Unit from Property;')
+                properties = cur.fetchall()
+                properties = ', '.join(i[0]+'('+i[1]+')' for i in properties)
+                properties.replace(', na','')
+                properties.replace('na,','')
+                properties.replace('na','')
 
-            cur.execute('select name FROM Functional;')
-            functionals = cur.fetchall()
-            functionals = ', '.join(i[0] for i in functionals)
-            functionals = functionals.replace(', na','')
-            functionals = functionals.replace('na,','')
-            functionals = functionals.replace('na','')
+                properties = properties.split(',')
+                snapshot.append(properties)
+                
+                cur.execute('SELECT method_name from Model;')
+                methods = cur.fetchall()
+                methods = ', '.join(i[0] for i in methods)
+                methods = methods.replace(', na','')
+                methods = methods.replace ('na,','')
+                methods = methods.replace('na','')
 
-            functionals = functionals.split(',')
-            snapshot.append(functionals)
+                methods = methods.split(',')
+                snapshot.append(methods)
 
-            cur.execute('SELECT name FROM Basis_set;')
-            basis = cur.fetchall()
-            basis = ', '.join(i[0] for i in basis)
-            basis = basis.replace(', na','')
-            basis = basis.replace('na,','')
-            basis = basis.replace('na','')
+                cur.execute('select name FROM Functional;')
+                functionals = cur.fetchall()
+                functionals = ', '.join(i[0] for i in functionals)
+                functionals = functionals.replace(', na','')
+                functionals = functionals.replace('na,','')
+                functionals = functionals.replace('na','')
 
-            basis = basis.split(',')
-            snapshot.append(basis)
+                functionals = functionals.split(',')
+                snapshot.append(functionals)
 
-            cur.execute('SELECT name FROM Forcefield')
-            forcefield = cur.fetchall()
-            forcefield = ', '.join(i[0] for i in forcefield)
-            forcefield = forcefield.replace(', na','')
-            forcefield = forcefield.replace('na,','')
-            forcefield = forcefield.replace('na','')
-            forcefield = forcefield.replace(' ','')
-            forcefield = forcefield.split(',')
-            snapshot.append(forcefield)
-   
-        else:
-            snapshot = False
-        
-        
-        if data_file.filename.rsplit('.',1)[1]!='csv':
-            db.replace('_chembddb','')
-            db = db.replace('_',' ')
-            return render_template('temp_insert.html',all_dbs=all_dbs,title=db,err_msg='No data file provided or incorrect file format. (csv requred)')
-        else:
-            des_status = request.form['des_status']
-            prop_store = request.form['prop_store']
-            #print(prop_store)
-            cols = []
-            for i in data.columns:
-                cols.append(i.replace(' ','_'))
-            print(data.columns)
-            #print(i)
-            data.columns = cols
-            if prop_store == 'single_col':
-                prop_store = True
+                cur.execute('SELECT name FROM Basis_set;')
+                basis = cur.fetchall()
+                basis = ', '.join(i[0] for i in basis)
+                basis = basis.replace(', na','')
+                basis = basis.replace('na,','')
+                basis = basis.replace('na','')
+
+                basis = basis.split(',')
+                snapshot.append(basis)
+
+                cur.execute('SELECT name FROM Forcefield')
+                forcefield = cur.fetchall()
+                forcefield = ', '.join(i[0] for i in forcefield)
+                forcefield = forcefield.replace(', na','')
+                forcefield = forcefield.replace('na,','')
+                forcefield = forcefield.replace('na','')
+                forcefield = forcefield.replace(' ','')
+                forcefield = forcefield.split(',')
+                snapshot.append(forcefield)
+    
             else:
-                prop_store = False
-            sim_status = request.form['sim_status']
-            if sim_status == 'yes_sim':
-                sim_status = True
-                methods_list = True
-                functionals_list = True
-                basis_list = True
-                forcefield_list = True
-            else:
-                sim_status = False
-                methods_list = False
-                functionals_list = False
-                basis_list = False
-                forcefield_list = False
+                snapshot = False
             
-            mw_meta = request.form['mw_meta']
-            if mw_meta == 'yes_mw':
-                mw_meta = True
+            
+            if data_file.filename.rsplit('.',1)[1]!='csv':
+                db.replace('_chembddb','')
+                db = db.replace('_',' ')
+                return render_template('temp_insert.html',all_dbs=all_dbs,title=db,err_msg='No data file provided or incorrect file format. (csv requred)')
             else:
-                mw_meta = False
+                des_status = request.form['des_status']
+                prop_store = request.form['prop_store']
+                #print(prop_store)
+                cols = []
+                for i in data.columns:
+                    cols.append(i.replace(' ','_'))
+                print(data.columns)
+                #print(i)
+                data.columns = cols
+                if prop_store == 'single_col':
+                    prop_store = True
+                else:
+                    prop_store = False
+                sim_status = request.form['sim_status']
+                if sim_status == 'yes_sim':
+                    sim_status = True
+                    methods_list = True
+                    functionals_list = True
+                    basis_list = True
+                    forcefield_list = True
+                else:
+                    sim_status = False
+                    methods_list = False
+                    functionals_list = False
+                    basis_list = False
+                    forcefield_list = False
+                
+                mw_meta = request.form['mw_meta']
+                if mw_meta == 'yes_mw':
+                    mw_meta = True
+                else:
+                    mw_meta = False
 
+                if des_status == 'molecule':
+                    des_status=False
+                    return render_template('temp_insert.html',all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                else:
+                    des_status=True
+                    return render_template('temp_insert.html',all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+        except Exception:
+            print(traceback.format_exc())
+            return render_template('temp_insert.html',all_dbs=original_all_dbs,error=traceback.format_exc(limit=0),init='True',snapshot='')
+    elif request.method == 'POST' and ('config' in request.form or 'use-config' in request.form):
+        try:
+            config_options = request.form
+            config_options = config_options.to_dict(flat=False)
+            molecule_identifiers_cols = []
+            molecule_identifiers = []
+            mw_cols = []
+            cols = list(data.columns)
+            
+            for key,value in config_options.items():
+                if 'col' in key:
+                    molecule_identifiers_cols.append(value)
+                elif '_id' in key:
+                    if value != ['cols_0A','cols_0B'] and value != ['MW']:
+                        molecule_identifiers.append(value)
+                elif 'mw' in key:
+                    if value != ['cols_0A_MW','cols_0B_MW']:
+                        mw_cols.append(value)
+            #molecule_identifiers = list(chain(*molecule_identifiers))
+            
+
+            remaining_cols = []
+            for i in cols:
+                if i not in molecule_identifiers:
+                    remaining_cols.append(i)
+            if des_status == True:
+                snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','ratio','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
+            else:
+                snapshot_cols = ['Molecule_Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
+            
+            
+            return render_template('temp_insert.html',props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta)
+        except Exception :
+            print(traceback.format_exc())
             if des_status == 'molecule':
-                des_status=False
-                return render_template('temp_insert.html',all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                    des_status=False
+                    return render_template('temp_insert.html',error=traceback.format_exc(limit=0),all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
             else:
                 des_status=True
-                return render_template('temp_insert.html',all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
-    elif request.method == 'POST' and ('config' in request.form or 'use-config' in request.form):
-        
-        config_options = request.form
-        config_options = config_options.to_dict(flat=False)
-        molecule_identifiers_cols = []
-        molecule_identifiers = []
-        mw_cols = []
-        cols = list(data.columns)
-        
-        for key,value in config_options.items():
-            if 'col' in key:
-                molecule_identifiers_cols.append(value)
-            elif '_id' in key:
-                if value != ['cols_0A','cols_0B'] and value != ['MW']:
-                    molecule_identifiers.append(value)
-            elif 'mw' in key:
-                if value != ['cols_0A_MW','cols_0B_MW']:
-                    mw_cols.append(value)
-        #molecule_identifiers = list(chain(*molecule_identifiers))
-        
-
-        remaining_cols = []
-        for i in cols:
-            if i not in molecule_identifiers:
-                remaining_cols.append(i)
-        if des_status == True:
-            snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','ratio','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
-        else:
-            snapshot_cols = ['Molecule_Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
-        
-        
-        return render_template('temp_insert.html',props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta)
-
-    elif request.method == 'POST' and ('meta-data' in request.form or 'download-submit' in request.form):
-        meta_data = request.form
-        meta_data = meta_data.to_dict(flat=False)
-        
-        property_list = meta_data['2_prop']
-        unit_list = meta_data['2_unit']
-        if sim_status == True:
-            simu_data_columns = meta_data['sim_id_0']
-        if prop_store == True:
-            property_columns = meta_data['prop_store_id_0']
-        else:
-            property_columns = meta_data['prop_id_0']
-        mol_ids={}
-
-        if des_status == True:
-            full_id_col = data[molecule_identifiers[0][0]].values.tolist() + data[molecule_identifiers[0][1]].values.tolist()
-        else:
-            full_id_col = data[molecule_identifiers[0]].values.tolist()
-        get_id = full_id_col
-        molec_id = []
-        for id in get_id:
-            if id not in molec_id:
-                molec_id.append(id)
-            else:
-                pass
-        print(request.form)
-        print(meta_data)
-        if des_status == True:
-            mol_ids.update({molecule_identifiers_cols[0][0]:molec_id})
-        else:
-            mol_ids.update({molecule_identifiers_cols[0][0]:molec_id})
-        # Add Properties to Property Table
-        cur.execute('SELECT Property_str FROM Property;')
-        old_properties = cur.fetchall()
-        old_properties = tuple(tuple(x) for x in old_properties)
-        cur.execute("SELECT unit FROM Property;")
-        old_units = cur.fetchall()
-        old_units = tuple(tuple(x) for x in old_units)
-        new_properties = set()
-        new_units = []
-        for i in property_list:
-            if i not in old_properties:
-                new_properties.add(i)
-        new_properties = tuple(new_properties)
-        for i in unit_list:
-            if i not in old_units:
-                new_units.append(i)
-        new_units = tuple(new_units)
-        for i in range(len(new_properties)):
-            cur.execute('INSERT INTO Property(Property_str,unit) VALUE ("%s","%s");'%(new_properties[i],new_units[i]))
-        # now for methods, functionals, basis sets, forcefields
-        if methods_list != False:
-            methods_list = data[simu_data_columns[0]]
-            cur.execute('SELECT method_name from Model')
-            old_methods = cur.fetchall()
-            old_methods = tuple(tuple(x) for x in old_methods)
-            new_methods = []
-            for i in methods_list:
-                if i not in old_methods:
-                    if i not in new_methods:
-                        new_methods.append(i)
-            new_methods = tuple(new_methods)
-            for i in new_methods:
-                cur.execute('INSERT INTO Model(method_name) VALUE("%s")'%i)
-            cur.execute('SELECT id, method_name from Model')
-            method_info = cur.fetchall()
-            method_info = tuple(tuple(x) for x in method_info)
-            method_id = []
-            methods = {}
-            for x in method_info:
-                methods.update({x[0]: x[1]})
-            for k, v in methods.items():
-                name_col = simu_data_columns[0]
-                for i in data[name_col]:
-                    if i == v:
-                        method_id.append(k)
-
-        if functionals_list != False:
-            functionals_list = data[simu_data_columns[1]]
-            cur.execute('SELECT name from Functional;')
-            old_functionals = cur.fetchall()
-            old_functionals = tuple(tuple(x) for x in old_functionals)
-            new_functionals = []
-            for i in functionals_list:
-                if i not in old_functionals:
-                    if i not in new_functionals:
-                        new_functionals.append(i)
-            new_functionals = tuple(new_functionals)
-            for i in new_functionals:
-                cur.execute('INSERT INTO Functional(name) VALUE("%s")'%i)
-            cur.execute('SELECT id, name from Functional')
-            functional_info = cur.fetchall()
-            functional_info = tuple(tuple(x) for x in functional_info)
-            functional_id = []
-            functionals = {}
-            for x in functional_info:
-                functionals.update({x[0]: x[1]})
-            for k, v in functionals.items():
-                name_col = simu_data_columns[1]
-                for i in data[name_col]:
-                    if i == v:
-                        functional_id.append(k)
-        
-        if basis_list != False:
-            basis_list = data[simu_data_columns[2]]
-            cur.execute('SELECT name from Basis_set;')
-            old_basis = cur.fetchall()
-            old_basis = tuple(tuple(x) for x in old_basis)
-            new_basis = []
-            for i in basis_list:
-                if i not in old_basis:
-                    if i not in new_basis:
-                        new_basis.append(i)
-            new_basis = tuple(new_basis)
-            for i in new_basis:
-                cur.execute('INSERT INTO Basis_set(name) VALUE("%s")'%i)
-            cur.execute('SELECT id, name from Basis_set')
-            basis_info = cur.fetchall()
-            basis_info = tuple(tuple(x) for x in basis_info)
-            basis_id = []
-            basis = {}
-            for x in basis_info:
-                basis.update({x[0]: x[1]})
-            for k, v in basis.items():
-                name_col = simu_data_columns[2]
-                for i in data['basis']:
-                    if i == v:
-                        basis_id.append(k)
-        
-        if forcefield_list != False:
-            forcefield_list = data[simu_data_columns[3]]
-            cur.execute('SELECT name from Forcefield;')
-            old_forcefield = cur.fetchall()
-            old_forcefield = tuple(tuple(x) for x in old_forcefield)
-            new_forcefield = []
-            for i in forcefield_list:
-                if i not in old_forcefield:
-                    if i not in new_forcefield:
-                        new_forcefield.append(i)
-            new_forcefield = tuple(new_forcefield)
-            for i in new_forcefield:
-                cur.execute('INSERT INTO Forcefield(name) VALUE("%s")'%i)
-            cur.execute('SELECT id, name from Forcefield')
-            forcefield_info = cur.fetchall()
-            forcefield_info = tuple(tuple(x) for x in forcefield_info)
-            forcefield_id = []
-            forcefield = {}
-            for x in forcefield_info:
-                forcefield.update({x[0]: x[1]})
-            for k, v in forcefield.items():
-                name_col = simu_data_columns[3]
-                for i in data['forcefield']:
-                    if i == v:
-                        forcefield_id.append(k)
-        #return render_template('temp_insert.html',all_dbs=all_dbs,init=True,success_msg='Success')
+                return render_template('temp_insert.html',error=traceback.format_exc(limit=0),all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
     
-    # elif request.method == 'POST' and ('final_md' in request.form):
-        # Add Molecules to Molecule Table
-        new_entries = []
-        row = []
-        if mw_meta == False:
-            mw_flag = False
-            for k in mol_ids.keys():
-                for val in mol_ids[k]:
-                    if k.lower() in pybel_identifiers.keys():
-                        try:
-                            
-                            m = pybel.readstring(pybel_identifiers[k.lower()],val[0])
-                            if k.lower() == 'smiles':
-                                iden = m.write('can').strip()
-                                if mw_flag == False:
-                                    mw = m.molwt
-                                    mw = round(mw,3)
-                                    mw_flag = True
-                            else:
-                                iden = m.write(pybel_identifiers[k.lower()]).strip()
-                                if mw_flag == False:
-                                    mw = m.molwt
-                                    mw = round(mw,3)
-                                    mw_flag = True
-                            row.append((iden,mw))
-                            del(mw)
-                            del(iden)
-                            mw_flag = False
-                        except:
-                            for mol in range(len(data)):
-                                db = db.replace('_',' ')
-                                print('Invalid Smiles on row number '+ str(mol) + '!')
-                    else:
-                            row.append(val)
-                            if mw_flag == False:
-                                mw_flag = True
-                                url = 'http://cactus.nci.nih.gov/chemical/structure/'
-                                try:
-                                    url = url + val + '/mw'
-                                    ans = urlopen(url).read().decode('utf8')
-                                except HTTPError:
-                                    mw = NULL
-            new_entries.append(row)
-            new_entries = tuple(tuple(x) for x in new_entries)
-        else:
-            # if user used library generator that gives MW values
-            mw_data = {}
+    elif request.method == 'POST' and ('meta-data' in request.form or 'download-submit' in request.form):
+        try:
+            meta_data = request.form
+            meta_data = meta_data.to_dict(flat=False)
+            
+            property_list = meta_data['2_prop']
+            unit_list = meta_data['2_unit']
+            if sim_status == True:
+                simu_data_columns = meta_data['sim_id_0']
+            if prop_store == True:
+                property_columns = meta_data['prop_store_id_0']
+            else:
+                property_columns = meta_data['prop_id_0']
+            mol_ids={}
+            
             if des_status == True:
-              mw = []
-              mw = data[mw_cols[0]].values.tolist() + data[mw_cols[1]].values.tolist()
+                full_id_col = data[molecule_identifiers[0][0]].values.tolist() + data[molecule_identifiers[0][1]].values.tolist()
             else:
-                mw = data[mw_cols[0]].values.tolist()
-            print(mw)
-            for i in range(len(get_id)):
-                mw_data[get_id[i]] = mw[i]
-            for i in mw_data.keys():
-                new_entries.append((i,mw_data[i]))
-        if mw_meta == True:
-            # insert information into Molecule Table
-            cur.execute("SELECT "+ ''.join(i.lower()+',' for i in mol_ids.keys())+"MW from Molecule")
-            molecules = cur.fetchall()
-            molecules = tuple(tuple(x) for x in molecules)
-            required_entries = list(set(new_entries)-set(molecules))
-            if len(mol_ids.keys())>1:
-                mol_q = ''.join(i+',' for i in mol_ids.keys())
-                vals = ''.join('%s,' for i in range(len(mol_ids)+1))
+                full_id_col = data[molecule_identifiers[0]].values.tolist()
+            get_id = full_id_col
+            molec_id = []
+            for id in get_id:
+                if id not in molec_id:
+                    molec_id.append(id)
+                else:
+                    pass
+            print(request.form)
+            print(meta_data)
+            if des_status == True:
+                mol_ids.update({molecule_identifiers_cols[0][0]:molec_id})
             else:
-                mol_q = list(mol_ids.keys())[0] + ','
-                vals = '%s,%s,'
-            for x in required_entries:
-                can_smiles = pybel.readstring('smi',x[0]).write('can').strip()
-                print(can_smiles)
-                cur.execute('INSERT INTO Molecule('+mol_q+'MW) VALUE('+vals[:-1]+')',(can_smiles,x[1]))
-            print('Molecules done!')
-        else:
-            cur.execute("SELECT "+ ''.join(i.lower()+',' for i in mol_ids.keys())+"MW from Molecule")
-            molecules = cur.fetchall()
-            molecules = tuple(tuple(x) for x in molecules)
-            required_entries = list(set(new_entries)-set(molecules))
+                mol_ids.update({molecule_identifiers_cols[0][0]:molec_id})
+            # Add Properties to Property Table
+            cur.execute('SELECT Property_str FROM Property;')
+            old_properties = cur.fetchall()
+            old_properties = tuple(tuple(x) for x in old_properties)
+            cur.execute("SELECT unit FROM Property;")
+            old_units = cur.fetchall()
+            old_units = tuple(tuple(x) for x in old_units)
+            new_properties = set()
+            new_units = []
+            for i in property_list:
+                if i not in old_properties:
+                    new_properties.add(i)
+            new_properties = tuple(new_properties)
+            for i in unit_list:
+                if i not in old_units:
+                    new_units.append(i)
+            new_units = tuple(new_units)
+            for i in range(len(new_properties)):
+                cur.execute('INSERT INTO Property(Property_str,unit) VALUE ("%s","%s");'%(new_properties[i],new_units[i]))
+            # now for methods, functionals, basis sets, forcefields
+            if methods_list != False:
+                methods_list = data[simu_data_columns[0]]
+                cur.execute('SELECT method_name from Model')
+                old_methods = cur.fetchall()
+                old_methods = tuple(tuple(x) for x in old_methods)
+                new_methods = []
+                for i in methods_list:
+                    if i not in old_methods:
+                        if i not in new_methods:
+                            new_methods.append(i)
+                new_methods = tuple(new_methods)
+                for i in new_methods:
+                    cur.execute('INSERT INTO Model(method_name) VALUE("%s")'%i)
+                cur.execute('SELECT id, method_name from Model')
+                method_info = cur.fetchall()
+                method_info = tuple(tuple(x) for x in method_info)
+                method_id = []
+                methods = {}
+                for x in method_info:
+                    methods.update({x[0]: x[1]})
+                for k, v in methods.items():
+                    name_col = simu_data_columns[0]
+                    for i in data[name_col]:
+                        if i == v:
+                            method_id.append(k)
+
+            if functionals_list != False:
+                functionals_list = data[simu_data_columns[1]]
+                cur.execute('SELECT name from Functional;')
+                old_functionals = cur.fetchall()
+                old_functionals = tuple(tuple(x) for x in old_functionals)
+                new_functionals = []
+                for i in functionals_list:
+                    if i not in old_functionals:
+                        if i not in new_functionals:
+                            new_functionals.append(i)
+                new_functionals = tuple(new_functionals)
+                for i in new_functionals:
+                    cur.execute('INSERT INTO Functional(name) VALUE("%s")'%i)
+                cur.execute('SELECT id, name from Functional')
+                functional_info = cur.fetchall()
+                functional_info = tuple(tuple(x) for x in functional_info)
+                functional_id = []
+                functionals = {}
+                for x in functional_info:
+                    functionals.update({x[0]: x[1]})
+                for k, v in functionals.items():
+                    name_col = simu_data_columns[1]
+                    for i in data[name_col]:
+                        if i == v:
+                            functional_id.append(k)
             
-            if len(mol_ids.keys())>1:
-                mol_q = ''.join(i+',' for i in mol_ids.keys())
-                vals = ''.join('%s,' for i in range(len(mol_ids)+1))
-            else:
-                mol_q = list(mol_ids.keys())[0] + ','
-                vals = '%s,%s,'
-
-            for x in required_entries[0]:
-                can_smiles = pybel.readstring('smi',x[0]).write('can').strip()
-                cur.execute('INSERT INTO Molecule('+mol_q+'MW) VALUE('+vals[:-1]+')',(can_smiles,x[1]))
-            print('Molecules done!')
-
-        cur.execute('SELECT id,Property_str from Property')
-        all_props = cur.fetchall()
-        prop_id = dict(map(reversed,all_props)) # reversed so that keys are the names of the properties and values are the id numbers
-        mol_q = 'ID,'+ list(mol_ids.keys())[0]
-        cur.execute("SELECT "+mol_q+" from Molecule")
-        all_mols = cur.fetchall()
-        molecule_id = dict(map(reversed,all_mols))
-        insert_df = pd.DataFrame()
-        if prop_store == True:
-            prop_val = data[property_columns[0]].values.tolist()
-            prop_type = data[property_columns[1]].values.tolist()
-           
-            property_id = []
-            for i in prop_type:
-                property_id.append(prop_id[i]) # list that will be put into insert_df. Uses the name of the property as key to get id as value.
-            insert_df['property_id'] = property_id
-            insert_df['value'] = prop_val
-        else:
-            descriptors = data[property_list].melt() # each molecule comes up 1 time for each property
-            prop_type = descriptors['variable'].values.tolist()
-            prop_val = descriptors['value'].values.tolist()
-            property_id = []
-
-            for i in prop_type:
-                property_id.append(prop_id[i]) # list that will be put into insert_df. Uses the name of the property as key to get id as value.
-            insert_df['property_id'] = property_id
-            insert_df['value'] = prop_val
-        if des_status == False:
-            temp_df = pd.DataFrame({'molecule':get_id}) 
-            t=temp_df["molecule"].values
-           
-            temp_df['mol_ids'] = temp_df['molecule'].apply(lambda a: molecule_id[pybel.readstring('smi',a[0]).write('can').strip()])
-            mol_ids_list = temp_df['mol_ids'].values.tolist()
-            insert_df['molecule_id'] = list(islice(cycle(mol_ids_list),len(insert_df)))
-        else:
-
-            des = {}
-            distinct_des_dict = {}
-            #print(data.head())
-            des_col_info = np.concatenate(molecule_identifiers).flat
-            #print(des_col_info)
-            #print(data.loc[:,des_col_info].head())
-
-            hba_list = data[des_col_info[0]].values.tolist()
-            hbd_list = data[des_col_info[1]].values.tolist()
-            ratio_list = data[des_col_info[2]].values.tolist()
-            for i in range(len(data)):
-                des.update({i:tuple([hba_list[i],hbd_list[i],ratio_list[i]])})
-
-            distinct_des = list(set(des.values()))
-
-            for i in range(len(distinct_des)):
-                distinct_des_dict.update({i:distinct_des[i]})
+            if basis_list != False:
+                basis_list = data[simu_data_columns[2]]
+                cur.execute('SELECT name from Basis_set;')
+                old_basis = cur.fetchall()
+                old_basis = tuple(tuple(x) for x in old_basis)
+                new_basis = []
+                for i in basis_list:
+                    if i not in old_basis:
+                        if i not in new_basis:
+                            new_basis.append(i)
+                new_basis = tuple(new_basis)
+                for i in new_basis:
+                    cur.execute('INSERT INTO Basis_set(name) VALUE("%s")'%i)
+                cur.execute('SELECT id, name from Basis_set')
+                basis_info = cur.fetchall()
+                basis_info = tuple(tuple(x) for x in basis_info)
+                basis_id = []
+                basis = {}
+                for x in basis_info:
+                    basis.update({x[0]: x[1]})
+                for k, v in basis.items():
+                    name_col = simu_data_columns[2]
+                    for i in data['basis']:
+                        if i == v:
+                            basis_id.append(k)
             
-            distinct_des_df = pd.DataFrame(distinct_des_dict)
-            distinct_des_df = distinct_des_df.T
-            
-            distinct_des_df[0] = distinct_des_df[0].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
-            distinct_des_df[1] = distinct_des_df[1].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
-            
-            insert_df['HBA'] = hba_list
-            #print(insert_df)
-            insert_df['HBA_id']=insert_df['HBA'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
-            insert_df['HBD'] = hbd_list
-            insert_df['HBD_id']=insert_df['HBD'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
-            insert_df = insert_df.drop(['HBA','HBD'],axis=1)
-            insert_df['ratio'] = ratio_list
-            
-
-            for i in range(len(distinct_des_df)):
-                hba = distinct_des_df[0][i]
-                hbd = distinct_des_df[1][i]
-                ratio = distinct_des_df[2][i]
-                cur.execute('INSERT INTO DES(HBA_id,HBD_id,ratio) VALUES ("%s","%s",%s);'%(hba,hbd,ratio))
-
-            cur.execute('SELECT id, HBA_id, HBD_id, ratio from DES')
-            all_des = cur.fetchall()
-            des_key = []
-            des_val = []
-            for i in all_des:
-                des_key.append(i[0])
-                des_val.append(str(i[1])+str(i[2])+str(i[3]))
-            des_dict = dict(map(reversed,zip(des_key,des_val)))
-            des_temp = []
-            for i in range(len(insert_df)):
-                des_entry = str(insert_df['HBA_id'][i])+str(insert_df['HBD_id'][i])+str(round(insert_df['ratio'][i],6))
-                des_temp.append(des_entry)
-            insert_df['des_temp'] = des_temp
-            insert_df['DES_id'] = insert_df['des_temp'].apply(lambda a: des_dict[a])
-            insert_df = insert_df.drop(['HBA_id','HBD_id','ratio','des_temp'],axis=1)
-            print('DES done!')
+            if forcefield_list != False:
+                forcefield_list = data[simu_data_columns[3]]
+                cur.execute('SELECT name from Forcefield;')
+                old_forcefield = cur.fetchall()
+                old_forcefield = tuple(tuple(x) for x in old_forcefield)
+                new_forcefield = []
+                for i in forcefield_list:
+                    if i not in old_forcefield:
+                        if i not in new_forcefield:
+                            new_forcefield.append(i)
+                new_forcefield = tuple(new_forcefield)
+                for i in new_forcefield:
+                    cur.execute('INSERT INTO Forcefield(name) VALUE("%s")'%i)
+                cur.execute('SELECT id, name from Forcefield')
+                forcefield_info = cur.fetchall()
+                forcefield_info = tuple(tuple(x) for x in forcefield_info)
+                forcefield_id = []
+                forcefield = {}
+                for x in forcefield_info:
+                    forcefield.update({x[0]: x[1]})
+                for k, v in forcefield.items():
+                    name_col = simu_data_columns[3]
+                    for i in data['forcefield']:
+                        if i == v:
+                            forcefield_id.append(k)
+            #return render_template('temp_insert.html',all_dbs=all_dbs,init=True,success_msg='Success')
         
-        mol_or_des_only = False
-        if methods_list != False:
-            insert_df['model_id'] = method_id
-        else:
-            mol_or_des_only = True
-        if functionals_list != False:
-            insert_df['functional_id'] = functional_id
-        else:
-            mol_or_des_only = True
-        if basis_list != False:
-            insert_df['basis_id'] = basis_id
-        else:
-            mol_or_des_only = True
-        if forcefield_list != False:
-            insert_df['forcefield_id'] = forcefield_id
-        else:
-            mol_or_des_only = True
-        
-        # Now, taking data to insert into values table
-        print('What is being entered into Values Table:')
-        print(insert_df)
-        if mol_or_des_only == True:
-            print('Data for Molecule/DES is being added!')
-            if des_status == False:
-                mol_cols = ['property_id','value','molecule_id']
-                insert_df = insert_df[mol_cols]
-                insert_tuples = insert_df.to_records(index=False)
-                insert_tuples = insert_tuples.tolist() # execute many needs sequence of sequences to work
-                print('Inserting data into Values table...')
-                start = time.time()
-                cur.executemany('INSERT INTO Value(property_id,num_value,molecule_id) VALUES(%s,%s,%s);',(insert_tuples))
-                stop = time.time()
-                print('This took '+str(round((stop-start),4))+ ' seconds!')
+        # elif request.method == 'POST' and ('final_md' in request.form):
+            # Add Molecules to Molecule Table
+            new_entries = []
+            row = []
+            if mw_meta == False:
+                mw_flag = False
+                for k in mol_ids.keys():
+                    for val in mol_ids[k]:
+                        if k.lower() in pybel_identifiers.keys():
+                            try:
+                                print(k.lower(),'this is k.lower')
+                                print(val,'this is val')
+                                if des_status == True:
+                                    val = [val]
+                                    print('This is val', val)
+                                m = pybel.readstring(pybel_identifiers[k.lower()],val[0])
+                                if k.lower() == 'smiles':
+                                    iden = m.write('can').strip()
+                                    if mw_flag == False:
+                                        mw = m.molwt
+                                        mw = round(mw,3)
+                                        mw_flag = True
+                                else:
+                                    iden = m.write(pybel_identifiers[k.lower()]).strip()
+                                    if mw_flag == False:
+                                        mw = m.molwt
+                                        mw = round(mw,3)
+                                        mw_flag = True
+                                row.append((iden,mw))
+                                del(mw)
+                                del(iden)
+                                mw_flag = False
+                            except:
+                                for mol in range(len(data)):
+                                    db = db.replace('_',' ')
+                                    #print('Invalid Smiles on row number '+ str(mol) + '!')
+                        else:
+                                row.append(val)
+                                if mw_flag == False:
+                                    mw_flag = True
+                                    url = 'http://cactus.nci.nih.gov/chemical/structure/'
+                                    try:
+                                        url = url + val + '/mw'
+                                        ans = urlopen(url).read().decode('utf8')
+                                    except HTTPError:
+                                        mw = NULL
+                new_entries.append(row)
+                new_entries = tuple(tuple(x) for x in new_entries)
             else:
-                des_cols = ['property_id','value','DES_id']
-                insert_df = insert_df[des_cols]
-                insert_tuples = insert_df.to_records(index=False)
-                insert_tuples = insert_tuples.values.tolist() # execute many needs sequence of sequences to work
-                print('Inserting data into Values table...')
-                start = time.time()
-                cur.executemany('INSERT INTO Value(property_id,num_value,des_id) VALUES(%s,%s,%s);',(insert_tuples))
-                stop = time.time()
-                print('This took '+str(round((stop-start),4))+ ' seconds!')
-        else:
-            print('Data for Models, Functionals, Basis Sets, and Forcefields is being added!')
-
-            if des_status == False:
-                insert_tuples = insert_df.to_records(index=False)
-                insert_tuples = insert_tuples.values.tolist() # execute many needs sequence of sequences to work
-                print('Inserting data into Values table...')
-                start = time.time()
-                cur.executemany('INSERT INTO Value(property_id,num_value,molecule_id,model_id,functional_id,basis_id,forcefield_id) VALUES(%s,%s,%s,%s,%s,%s,%s);',(insert_tuples))
-                stop = time.time()
-                print('This took '+str(round((stop-start),4))+ ' seconds!')
+                # if user used library generator that gives MW values
+                mw_data = {}
+                if des_status == True:
+                    mw = []
+                    mw = data[mw_cols[0]].values.tolist() + data[mw_cols[1]].values.tolist()
+                else:
+                    mw = data[mw_cols[0]].values.tolist()
+                print(mw)
+                for i in range(len(get_id)):
+                    mw_data[get_id[i]] = mw[i]
+                for i in mw_data.keys():
+                    new_entries.append((i,mw_data[i]))
+            if mw_meta == True:
+                # insert information into Molecule Table
+                cur.execute("SELECT "+ ''.join(i.lower()+',' for i in mol_ids.keys())+"MW from Molecule")
+                molecules = cur.fetchall()
+                molecules = tuple(tuple(x) for x in molecules)
+                required_entries = list(set(new_entries)-set(molecules))
+                if len(mol_ids.keys())>1:
+                    mol_q = ''.join(i+',' for i in mol_ids.keys())
+                    vals = ''.join('%s,' for i in range(len(mol_ids)+1))
+                else:
+                    mol_q = list(mol_ids.keys())[0] + ','
+                    vals = '%s,%s,'
+                for x in required_entries:
+                    can_smiles = pybel.readstring('smi',x[0]).write('can').strip()
+                    print(can_smiles)
+                    cur.execute('INSERT INTO Molecule('+mol_q+'MW) VALUE('+vals[:-1]+')',(can_smiles,x[1]))
+                print('Molecules done!')
+            else:
+                cur.execute("SELECT "+ ''.join(i.lower()+',' for i in mol_ids.keys())+"MW from Molecule")
+                molecules = cur.fetchall()
+                molecules = tuple(tuple(x) for x in molecules)
+                required_entries = list(set(new_entries)-set(molecules))
                 
+                if len(mol_ids.keys())>1:
+                    mol_q = ''.join(i+',' for i in mol_ids.keys())
+                    vals = ''.join('%s,' for i in range(len(mol_ids)+1))
+                else:
+                    mol_q = list(mol_ids.keys())[0] + ','
+                    vals = '%s,%s,'
+
+                print(required_entries,'this is required_entries')
+                for x in required_entries[0]:
+                    can_smiles = pybel.readstring('smi',x[0]).write('can').strip()
+                    cur.execute('INSERT INTO Molecule('+mol_q+'MW) VALUE('+vals[:-1]+')',(can_smiles,x[1]))
+                    print(x,'this is x')
+                    print(vals,'this is vals')
+                print('Molecules done!')
+                
+
+            cur.execute('SELECT id,Property_str from Property')
+            all_props = cur.fetchall()
+            prop_id = dict(map(reversed,all_props)) # reversed so that keys are the names of the properties and values are the id numbers
+            mol_q = 'ID,'+ list(mol_ids.keys())[0]
+            print(mol_q,'This is mol_q')
+            cur.execute("SELECT "+mol_q+" from Molecule")
+            all_mols = cur.fetchall()
+            print(all_mols,'this is all_mols')
+            molecule_id = dict(map(reversed,all_mols))
+            insert_df = pd.DataFrame()
+            if prop_store == True:
+                prop_val = data[property_columns[0]].values.tolist()
+                prop_type = data[property_columns[1]].values.tolist()
+            
+                property_id = []
+                for i in prop_type:
+                    property_id.append(prop_id[i]) # list that will be put into insert_df. Uses the name of the property as key to get id as value.
+                insert_df['property_id'] = property_id
+                insert_df['value'] = prop_val
             else:
-                insert_tuples = insert_df.to_records(index=False)
-                insert_tuples = insert_tuples.values.tolist() # execute many needs sequence of sequences to work
-                print('Inserting data into Values table...')
-                start = time.time()
-                cur.executemany('INSERT INTO Value(property_id,num_value,des_id,model_id,functional_id,basis_id,forcefield_id) VALUES(%s,%s,%s,%s,%s,%s,%s);',(insert_tuples))
-                stop = time.time()
-                print('This took '+str(round((stop-start),4))+ ' seconds!')
-        con.commit()
-        print('Values inserted successfully!')
-        return render_template('temp_insert.html',val_submit = True,all_dbs=all_dbs,msg="Values submitted successfully!")
+                descriptors = data[property_list].melt() # each molecule comes up 1 time for each property
+                prop_type = descriptors['variable'].values.tolist()
+                prop_val = descriptors['value'].values.tolist()
+                property_id = []
+
+                for i in prop_type:
+                    property_id.append(prop_id[i]) # list that will be put into insert_df. Uses the name of the property as key to get id as value.
+                insert_df['property_id'] = property_id
+                insert_df['value'] = prop_val
+            if des_status == False:
+                temp_df = pd.DataFrame({'molecule':get_id}) 
+                t=temp_df["molecule"].values
+            
+                temp_df['mol_ids'] = temp_df['molecule'].apply(lambda a: molecule_id[pybel.readstring('smi',a[0]).write('can').strip()])
+                mol_ids_list = temp_df['mol_ids'].values.tolist()
+                insert_df['molecule_id'] = list(islice(cycle(mol_ids_list),len(insert_df)))
+            else:
+
+                des = {}
+                distinct_des_dict = {}
+                #print(data.head())
+                des_col_info = np.concatenate(molecule_identifiers).flat
+                #print(des_col_info)
+                #print(data.loc[:,des_col_info].head())
+
+                hba_list = data[des_col_info[0]].values.tolist()
+                hbd_list = data[des_col_info[1]].values.tolist()
+                ratio_list = data[des_col_info[2]].values.tolist()
+                for i in range(len(data)):
+                    des.update({i:tuple([hba_list[i],hbd_list[i],ratio_list[i]])})
+
+                distinct_des = list(set(des.values()))
+
+                for i in range(len(distinct_des)):
+                    distinct_des_dict.update({i:distinct_des[i]})
+                
+
+                print(molecule_id,'this is molecule_id')
+                distinct_des_df = pd.DataFrame(distinct_des_dict)
+                distinct_des_df = distinct_des_df.T
+                print(distinct_des_df[0],'this is distinct_des_df')
+                distinct_des_df[0] = distinct_des_df[0].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
+                distinct_des_df[1] = distinct_des_df[1].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
+                
+                insert_df['HBA'] = hba_list
+                #print(insert_df)
+                insert_df['HBA_id']=insert_df['HBA'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
+                insert_df['HBD'] = hbd_list
+                insert_df['HBD_id']=insert_df['HBD'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
+                insert_df = insert_df.drop(['HBA','HBD'],axis=1)
+                insert_df['ratio'] = ratio_list
+                
+
+                for i in range(len(distinct_des_df)):
+                    hba = distinct_des_df[0][i]
+                    hbd = distinct_des_df[1][i]
+                    ratio = distinct_des_df[2][i]
+                    cur.execute('INSERT INTO DES(HBA_id,HBD_id,ratio) VALUES ("%s","%s",%s);'%(hba,hbd,ratio))
+
+                cur.execute('SELECT id, HBA_id, HBD_id, ratio from DES')
+                all_des = cur.fetchall()
+                des_key = []
+                des_val = []
+                for i in all_des:
+                    des_key.append(i[0])
+                    des_val.append(str(i[1])+str(i[2])+str(i[3]))
+                des_dict = dict(map(reversed,zip(des_key,des_val)))
+                des_temp = []
+                for i in range(len(insert_df)):
+                    des_entry = str(insert_df['HBA_id'][i])+str(insert_df['HBD_id'][i])+str(round(insert_df['ratio'][i],6))
+                    des_temp.append(des_entry)
+                insert_df['des_temp'] = des_temp
+                insert_df['DES_id'] = insert_df['des_temp'].apply(lambda a: des_dict[a])
+                insert_df = insert_df.drop(['HBA_id','HBD_id','ratio','des_temp'],axis=1)
+                print('DES done!')
+            
+            mol_or_des_only = False
+            if methods_list != False:
+                insert_df['model_id'] = method_id
+            else:
+                mol_or_des_only = True
+            if functionals_list != False:
+                insert_df['functional_id'] = functional_id
+            else:
+                mol_or_des_only = True
+            if basis_list != False:
+                insert_df['basis_id'] = basis_id
+            else:
+                mol_or_des_only = True
+            if forcefield_list != False:
+                insert_df['forcefield_id'] = forcefield_id
+            else:
+                mol_or_des_only = True
+            
+            # Now, taking data to insert into values table
+            print('What is being entered into Values Table:')
+            print(insert_df)
+            if mol_or_des_only == True:
+                print('Data for Molecule/DES is being added!')
+                if des_status == False:
+                    mol_cols = ['property_id','value','molecule_id']
+                    insert_df = insert_df[mol_cols]
+                    insert_tuples = insert_df.to_records(index=False)
+                    insert_tuples = insert_tuples.tolist() # execute many needs sequence of sequences to work
+                    print('Inserting data into Values table...')
+                    start = time.time()
+                    cur.executemany('INSERT INTO Value(property_id,num_value,molecule_id) VALUES(%s,%s,%s);',(insert_tuples))
+                    stop = time.time()
+                    print('This took '+str(round((stop-start),4))+ ' seconds!')
+                else:
+                    des_cols = ['property_id','value','DES_id']
+                    insert_df = insert_df[des_cols]
+                    insert_tuples = insert_df.to_records(index=False)
+                    insert_tuples = insert_tuples.tolist() # execute many needs sequence of sequences to work
+                    print('Inserting data into Values table...')
+                    start = time.time()
+                    cur.executemany('INSERT INTO Value(property_id,num_value,des_id) VALUES(%s,%s,%s);',(insert_tuples))
+                    stop = time.time()
+                    print('This took '+str(round((stop-start),4))+ ' seconds!')
+            else:
+                print('Data for Models, Functionals, Basis Sets, and Forcefields is being added!')
+                if des_status == False:
+                    insert_tuples = insert_df.to_records(index=False)
+                    insert_tuples = insert_tuples.values.tolist() # execute many needs sequence of sequences to work
+                    print('Inserting data into Values table...')
+                    start = time.time()
+                    cur.executemany('INSERT INTO Value(property_id,num_value,molecule_id,model_id,functional_id,basis_id,forcefield_id) VALUES(%s,%s,%s,%s,%s,%s,%s);',(insert_tuples))
+                    stop = time.time()
+                    print('This took '+str(round((stop-start),4))+ ' seconds!')
+                else:
+                    insert_tuples = insert_df.to_records(index=False)
+                    insert_tuples = insert_tuples.values.tolist() # execute many needs sequence of sequences to work
+                    print('Inserting data into Values table...')
+                    start = time.time()
+                    cur.executemany('INSERT INTO Value(property_id,num_value,des_id,model_id,functional_id,basis_id,forcefield_id) VALUES(%s,%s,%s,%s,%s,%s,%s);',(insert_tuples))
+                    stop = time.time()
+                    print('This took '+str(round((stop-start),4))+ ' seconds!')
+            con.commit()
+            print('Values inserted successfully!')
+            return render_template('temp_insert.html',val_submit = True,all_dbs=all_dbs,msg="Values submitted successfully!")
+        except Exception:
+            print(traceback.format_exc())
+            return render_template('temp_insert.html',error=traceback.format_exc(limit=0),props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta)
     else:
         # default landing page
         return render_template('temp_insert.html',all_dbs=all_dbs,init='True',snapshot='')
-        
+       
     
 @app.route('/search',methods=['GET','POST'])
 def search():
@@ -1139,7 +1167,6 @@ def search_db():
                         'n_res': n_res,
                         'all_dbs': all_dbs
                     }
-                print(sdb)
         else:
             # executing the query
             print('\nMySQL search query: ')
@@ -1147,7 +1174,6 @@ def search_db():
             cur.execute(sql)
             data1 = cur.fetchall()
             data, columns = post_process(sql, data1,'molecule')
-            print(data.head())
             # the following section is just to format the column headers that appear on the html page
             temp_met = []
             temp_col = []
@@ -1409,16 +1435,14 @@ def search_db():
             counts_q= 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
             counts_q = counts_q + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id) '
             counts_q =counts_q + 'select count(*) '+sql[sql.find('from'):] +';'
-        #print('counts_q')
-        #print(counts_q)
+       
         # because smiles_search will get all results from the db because substructure matching is required
         if ('property' not in sql and 'MW' not in sql) or len(keys)>1:
             counts = -1
         else:
             if 'all' not in meta:
                 sql = sql + 'limit 50'
-            # print(sql)
-            #print(counts_q)
+          
             cur.execute(counts_q)
             counts = cur.fetchall()
             counts = counts[0][0]
@@ -1506,7 +1530,6 @@ def search_db():
                         hba = from_form['HBA_SMILES']
                         hba_1, hba_2 = hba.split('.')
                         smartsA = pybel.Smarts(hba_1)
-                        #print(smartsA)
                         smi_valA = smartsA
                         for i in range(len(data)):
                             molA = pybel.readstring("smi",data.loc[i]['HBA_SMILES'])

@@ -99,6 +99,7 @@
       var add = 'add_' + n
       document.getElementById(add).disabled = false
     }
+
   </script>
 </head>
 
@@ -106,7 +107,7 @@
 
   <div class="nav">
     <a href="/setup">
-      <div class="nav-button nav-selected">⚙️ Setup</div>
+      <div class="nav-button ">⚙️ Setup</div>
     </a>
     <a href="/search">
       <div class="nav-button">🔍 Search</div>
@@ -115,10 +116,15 @@
       <div class="nav-button">❌ Delete</div>
     </a>
     <a href="/temp_insert">
-      <div class="nav-button">🗳️ Insert</div>
+      <div class="nav-button nav-selected">🗳️ Insert</div>
     </a>
 
   </div>
+  {%if error %}
+  <div class="error alert-danger">
+    There was an error, it was {{error}}.
+  </div>
+  {%endif%}
   <div class="insert">
     <h3 style="font-family:Exo;">Insert</h3>
     {% if init %}
