@@ -209,7 +209,7 @@ def connect():
             print("in the except part",e)
             return render_template('connect.html')
 
-@app.route('/setup',methods=['POST'])
+@app.route('/setup',methods=['POST','GET'])
 def create_schema(host=-1,user='',pw='',db=''):
     print(host,user,pw,db)
     """
@@ -284,7 +284,7 @@ def create_schema(host=-1,user='',pw='',db=''):
         cur.execute('CREATE TABLE `%s`.`Basis_set`(`id` INT NOT NULL AUTO_INCREMENT,`name` VARCHAR(100) DEFAULT \'NONE\',PRIMARY KEY (`id`));'%db)
         cur.execute('CREATE TABLE `%s`.`Forcefield`(`id` INT NOT NULL AUTO_INCREMENT,`name` VARCHAR(100) DEFAULT \'NONE\',PRIMARY KEY (`id`));'%db)
         # DES entries cannot have identical hba and hbd ids from molecule table
-        cur.execute('CREATE TABLE `%s`.`DES` (`id` INT NOT NULL AUTO_INCREMENT,`HBA_id` INT,`HBD_id` INT,`ratio` FLOAT, PRIMARY KEY(`id`),FOREIGN KEY(`HBA_id`) REFERENCES `Molecule`(`id`) ON DELETE CASCADE,FOREIGN KEY(`HBD_id`) REFERENCES `Molecule`(`id`) ON DELETE CASCADE,CHECK(`HBA_id`<>`HBD_id`));'%db)
+        cur.execute('CREATE TABLE `%s`.`DES` (`id` INT NOT NULL AUTO_INCREMENT,`HBA_id` INT,`HBD_id` INT,`Other_id` INT,`HBA_to_HBD_ratio` FLOAT,`Other_to_HBD_ratio` FLOAT, PRIMARY KEY(`id`),FOREIGN KEY(`HBA_id`) REFERENCES `Molecule`(`id`) ON DELETE CASCADE,FOREIGN KEY(`HBD_id`) REFERENCES `Molecule`(`id`) ON DELETE CASCADE,CHECK(`HBA_id`<>`HBD_id`));'%db)
         cur.execute('CREATE TABLE `%s`.`Value` (`id` INT NOT NULL AUTO_INCREMENT,`num_value` FLOAT NOT NULL,`model_id` INT,`Property_id` INT NOT NULL, `functional_id` INT, `basis_id` INT, `forcefield_id` INT, `DES_id` INT, `molecule_id` INT, PRIMARY KEY(`id`));'%db)
         cur.execute('CREATE TABLE `%s`.`Configuration`(`id` INT DEFAULT 0,`conf` VARCHAR(200) DEFAULT \'NONE\',`unit_dict` VARCHAR(500) DEFAULT \'NONE\',PRIMARY KEY (`id`));'%db)
         cur.execute('ALTER TABLE `%s`.`Value` ADD CONSTRAINT `Value_fk0` FOREIGN KEY (`model_id`) REFERENCES `Model`(`id`) on DELETE CASCADE;'%db)
@@ -324,7 +324,7 @@ def temp_insert():
     Inserts csv data into database
 
     """
-    global all_dbs, db, data_file, cur, data,mol_ids,con,snapshot,prop_type,prop_store,sim_status,mw_cols,mw_meta
+    global is_tert,all_dbs, db, data_file, cur, data,mol_ids,con,snapshot,prop_type,prop_store,sim_status,mw_cols,mw_meta
     global des_status,methods_list,functionals_list,basis_list,forcefield_list, molecule_identifiers, molecule_identifiers_cols
     global pybel_identifiers, molecule_id, mw_cols,remaining_cols,snapshot_cols
     mi_cols = []
@@ -441,12 +441,13 @@ def temp_insert():
             else:
                 des_status = request.form['des_status']
                 prop_store = request.form['prop_store']
-                #print(prop_store)
+                if 'is_tert' in request.form:
+                    is_tert = request.form['is_tert']
+                else:
+                    is_tert=False
                 cols = []
                 for i in data.columns:
                     cols.append(i.replace(' ','_'))
-                print(data.columns)
-                #print(i)
                 data.columns = cols
                 if prop_store == 'single_col':
                     prop_store = True
@@ -477,7 +478,12 @@ def temp_insert():
                     return render_template('temp_insert.html',all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
                 else:
                     des_status=True
-                    return render_template('temp_insert.html',all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                    if is_tert=='tert':
+                        is_tert = True
+                        return render_template('temp_insert.html',is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Other_Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                    else:
+                        is_tert = False
+                        return render_template('temp_insert.html',is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
         except Exception:
             print(traceback.format_exc())
             return render_template('temp_insert.html',all_dbs=original_all_dbs,error=traceback.format_exc(limit=0),init='True',snapshot='')
@@ -494,25 +500,28 @@ def temp_insert():
                 if 'col' in key:
                     molecule_identifiers_cols.append(value)
                 elif '_id' in key:
-                    if value != ['cols_0A','cols_0B'] and value != ['MW']:
+                    if value != ['cols_0A','cols_0B','cols_0O'] and value != ['MW']:
                         molecule_identifiers.append(value)
                 elif 'mw' in key:
-                    if value != ['cols_0A_MW','cols_0B_MW']:
+                    if value != ['cols_0A_MW','cols_0B_MW','cols_0O_MW']:
                         mw_cols.append(value)
             #molecule_identifiers = list(chain(*molecule_identifiers))
-            
+            print(molecule_identifiers)
 
             remaining_cols = []
             for i in cols:
                 if i not in molecule_identifiers:
                     remaining_cols.append(i)
             if des_status == True:
-                snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','ratio','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
+                if is_tert == True:
+                    snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Other_Identifiers','HBA_to_HBD_ratio','Other_to_HBD_ratio','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
+                else:
+                    snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','HBA_to_HBD_ratio','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
             else:
                 snapshot_cols = ['Molecule_Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
             
             
-            return render_template('temp_insert.html',props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta)
+            return render_template('temp_insert.html',props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta,is_tert=is_tert)
         except Exception :
             print(traceback.format_exc())
             if des_status == 'molecule':
@@ -520,7 +529,10 @@ def temp_insert():
                     return render_template('temp_insert.html',error=traceback.format_exc(limit=0),all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
             else:
                 des_status=True
-                return render_template('temp_insert.html',error=traceback.format_exc(limit=0),all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                if is_tert == True:
+                    return render_template('temp_insert.html',error=traceback.format_exc(limit=0),is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Other_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                else:
+                    return render_template('temp_insert.html',error=traceback.format_exc(limit=0),is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
     
     elif request.method == 'POST' and ('meta-data' in request.form or 'download-submit' in request.form):
         try:
@@ -536,9 +548,12 @@ def temp_insert():
             else:
                 property_columns = meta_data['prop_id_0']
             mol_ids={}
-            
+            print('property_columns:',property_columns)
+            print('data columns:',data.columns)
             if des_status == True:
                 full_id_col = data[molecule_identifiers[0][0]].values.tolist() + data[molecule_identifiers[0][1]].values.tolist()
+                if is_tert == True:
+                    full_id_col = data[molecule_identifiers[0][0]].values.tolist() + data[molecule_identifiers[0][1]].values.tolist() + data[molecule_identifiers[0][2]].values.tolist()
             else:
                 full_id_col = data[molecule_identifiers[0]].values.tolist()
             get_id = full_id_col
@@ -557,19 +572,15 @@ def temp_insert():
             # Add Properties to Property Table
             cur.execute('SELECT Property_str FROM Property;')
             old_properties = cur.fetchall()
-            old_properties = tuple(tuple(x) for x in old_properties)
+            old_properties = [x[0] for x in old_properties]
             cur.execute("SELECT unit FROM Property;")
             old_units = cur.fetchall()
-            old_units = tuple(tuple(x) for x in old_units)
+            old_units = [x[0] for x in old_units]
             new_properties = set()
-            new_units = []
-            for i in property_list:
-                if i not in old_properties:
-                    new_properties.add(i)
+            new_units = set()
+            new_properties = [x for x in property_list if x not in old_properties]
             new_properties = tuple(new_properties)
-            for i in unit_list:
-                if i not in old_units:
-                    new_units.append(i)
+            new_units = [x for x in unit_list if x not in old_units]
             new_units = tuple(new_units)
             for i in range(len(new_properties)):
                 cur.execute('INSERT INTO Property(Property_str,unit) VALUE ("%s","%s");'%(new_properties[i],new_units[i]))
@@ -578,12 +589,8 @@ def temp_insert():
                 methods_list = data[simu_data_columns[0]]
                 cur.execute('SELECT method_name from Model')
                 old_methods = cur.fetchall()
-                old_methods = tuple(tuple(x) for x in old_methods)
-                new_methods = []
-                for i in methods_list:
-                    if i not in old_methods:
-                        if i not in new_methods:
-                            new_methods.append(i)
+                old_methods = [x[0] for x in old_methods]
+                new_methods = [x for x in methods_list if x not in old_methods]
                 new_methods = tuple(new_methods)
                 for i in new_methods:
                     cur.execute('INSERT INTO Model(method_name) VALUE("%s")'%i)
@@ -604,12 +611,8 @@ def temp_insert():
                 functionals_list = data[simu_data_columns[1]]
                 cur.execute('SELECT name from Functional;')
                 old_functionals = cur.fetchall()
-                old_functionals = tuple(tuple(x) for x in old_functionals)
-                new_functionals = []
-                for i in functionals_list:
-                    if i not in old_functionals:
-                        if i not in new_functionals:
-                            new_functionals.append(i)
+                old_functionals = [x[0] for x in old_functionals]
+                new_functionals = [x for x in functionals_list if x not in old_functionals]
                 new_functionals = tuple(new_functionals)
                 for i in new_functionals:
                     cur.execute('INSERT INTO Functional(name) VALUE("%s")'%i)
@@ -630,12 +633,8 @@ def temp_insert():
                 basis_list = data[simu_data_columns[2]]
                 cur.execute('SELECT name from Basis_set;')
                 old_basis = cur.fetchall()
-                old_basis = tuple(tuple(x) for x in old_basis)
-                new_basis = []
-                for i in basis_list:
-                    if i not in old_basis:
-                        if i not in new_basis:
-                            new_basis.append(i)
+                old_basis = [x[0] for x in old_basis]
+                new_basis = [x for x in basis_list if x not in old_basis]
                 new_basis = tuple(new_basis)
                 for i in new_basis:
                     cur.execute('INSERT INTO Basis_set(name) VALUE("%s")'%i)
@@ -656,12 +655,8 @@ def temp_insert():
                 forcefield_list = data[simu_data_columns[3]]
                 cur.execute('SELECT name from Forcefield;')
                 old_forcefield = cur.fetchall()
-                old_forcefield = tuple(tuple(x) for x in old_forcefield)
-                new_forcefield = []
-                for i in forcefield_list:
-                    if i not in old_forcefield:
-                        if i not in new_forcefield:
-                            new_forcefield.append(i)
+                old_forcefield = [x[0] for x in old_forcefield]
+                new_forcefield = [x for x in forcefield_list if x not in old_forcefield]
                 new_forcefield = tuple(new_forcefield)
                 for i in new_forcefield:
                     cur.execute('INSERT INTO Forcefield(name) VALUE("%s")'%i)
@@ -689,11 +684,11 @@ def temp_insert():
                     for val in mol_ids[k]:
                         if k.lower() in pybel_identifiers.keys():
                             try:
-                                print(k.lower(),'this is k.lower')
-                                print(val,'this is val')
+                                # print(k.lower(),'this is k.lower')
+                                # print(val,'this is val')
                                 if des_status == True:
                                     val = [val]
-                                    print('This is val', val)
+                                    # print('This is val', val)
                                 m = pybel.readstring(pybel_identifiers[k.lower()],val[0])
                                 if k.lower() == 'smiles':
                                     iden = m.write('can').strip()
@@ -714,7 +709,7 @@ def temp_insert():
                             except:
                                 for mol in range(len(data)):
                                     db = db.replace('_',' ')
-                                    #print('Invalid Smiles on row number '+ str(mol) + '!')
+                                    print('Invalid Smiles on row number '+ str(mol) + '!')
                         else:
                                 row.append(val)
                                 if mw_flag == False:
@@ -732,10 +727,13 @@ def temp_insert():
                 mw_data = {}
                 if des_status == True:
                     mw = []
-                    mw = data[mw_cols[0]].values.tolist() + data[mw_cols[1]].values.tolist()
+                    if is_tert == True:
+                        mw = data[mw_cols[0]].values.tolist() + data[mw_cols[1]].values.tolist() + data[mw_cols[2]].values.tolist()
+                    else:
+                        mw = data[mw_cols[0]].values.tolist() + data[mw_cols[1]].values.tolist()
                 else:
                     mw = data[mw_cols[0]].values.tolist()
-                print(mw)
+                # print(mw)
                 for i in range(len(get_id)):
                     mw_data[get_id[i]] = mw[i]
                 for i in mw_data.keys():
@@ -754,7 +752,6 @@ def temp_insert():
                     vals = '%s,%s,'
                 for x in required_entries:
                     can_smiles = pybel.readstring('smi',x[0]).write('can').strip()
-                    print(can_smiles)
                     cur.execute('INSERT INTO Molecule('+mol_q+'MW) VALUE('+vals[:-1]+')',(can_smiles,x[1]))
                 print('Molecules done!')
             else:
@@ -774,8 +771,6 @@ def temp_insert():
                 for x in required_entries[0]:
                     can_smiles = pybel.readstring('smi',x[0]).write('can').strip()
                     cur.execute('INSERT INTO Molecule('+mol_q+'MW) VALUE('+vals[:-1]+')',(can_smiles,x[1]))
-                    print(x,'this is x')
-                    print(vals,'this is vals')
                 print('Molecules done!')
                 
 
@@ -826,9 +821,17 @@ def temp_insert():
 
                 hba_list = data[des_col_info[0]].values.tolist()
                 hbd_list = data[des_col_info[1]].values.tolist()
-                ratio_list = data[des_col_info[2]].values.tolist()
+                if is_tert == True:
+                    other_list = data[des_col_info[2]].values.tolist()
+                    hba_to_hbd_ratio_list = data[des_col_info[3]].values.tolist()
+                    other_to_hbd_ratio_list = data[des_col_info[4]].values.tolist()
+                else:
+                    hba_to_hbd_ratio_list = des[des_col_info[2]].values.tolist()
                 for i in range(len(data)):
-                    des.update({i:tuple([hba_list[i],hbd_list[i],ratio_list[i]])})
+                    if is_tert == True:
+                        des.update({i:tuple([hba_list[i],hbd_list[i],other_list[i],hba_to_hbd_ratio_list[i],other_to_hbd_ratio_list[i]])})
+                    else:
+                        des.update({i:tuple([hba_list[i],hbd_list[i],hba_to_hbd_ratio_list[i]])})
 
                 distinct_des = list(set(des.values()))
 
@@ -844,35 +847,63 @@ def temp_insert():
                 distinct_des_df[1] = distinct_des_df[1].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
                 
                 insert_df['HBA'] = hba_list
-                #print(insert_df)
                 insert_df['HBA_id']=insert_df['HBA'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
                 insert_df['HBD'] = hbd_list
                 insert_df['HBD_id']=insert_df['HBD'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
-                insert_df = insert_df.drop(['HBA','HBD'],axis=1)
-                insert_df['ratio'] = ratio_list
+                if is_tert == True:
+                    insert_df['Other'] = other_list
+                    insert_df['Other_id']= insert_df['Other'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
+                    insert_df = insert_df.drop(['HBA','HBD','Other'],axis=1)
+                    insert_df['HBA_to_HBD_ratio'] = hba_to_hbd_ratio_list
+                    insert_df['Other_to_HBD_ratio'] = other_to_hbd_ratio_list
+                else:
+                    insert_df = insert_df.drop(['HBA','HBD'],axis=1)
+                    insert_df['HBA_to_HBD_ratio'] = hba_to_hbd_ratio_list
                 
-
+                    
                 for i in range(len(distinct_des_df)):
                     hba = distinct_des_df[0][i]
                     hbd = distinct_des_df[1][i]
-                    ratio = distinct_des_df[2][i]
-                    cur.execute('INSERT INTO DES(HBA_id,HBD_id,ratio) VALUES ("%s","%s",%s);'%(hba,hbd,ratio))
-
-                cur.execute('SELECT id, HBA_id, HBD_id, ratio from DES')
-                all_des = cur.fetchall()
-                des_key = []
-                des_val = []
-                for i in all_des:
-                    des_key.append(i[0])
-                    des_val.append(str(i[1])+str(i[2])+str(i[3]))
-                des_dict = dict(map(reversed,zip(des_key,des_val)))
-                des_temp = []
-                for i in range(len(insert_df)):
-                    des_entry = str(insert_df['HBA_id'][i])+str(insert_df['HBD_id'][i])+str(round(insert_df['ratio'][i],6))
-                    des_temp.append(des_entry)
-                insert_df['des_temp'] = des_temp
-                insert_df['DES_id'] = insert_df['des_temp'].apply(lambda a: des_dict[a])
-                insert_df = insert_df.drop(['HBA_id','HBD_id','ratio','des_temp'],axis=1)
+                    if is_tert == True:
+                        other_id = distinct_des_df[2][i]
+                        hba_to_hbd_ratio = distinct_des_df[3][i]
+                        other_to_hbd_ratio = distinct_des_df[4][i]
+                        cur.execute('INSERT INTO DES(HBA_id,HBD_id,Other_id,HBA_to_HBD_ratio,Other_to_HBD_ratio) VALUES ("%s","%s","%s",%s,%s);'%(hba,hbd,other_id,hba_to_hbd_ratio,other_to_hbd_ratio))
+                    else:
+                        hba_to_hbd_ratio = distinct_des_df[2][i]
+                        cur.execute('INSERT INTO DES(HBA_id,HBD_id,HBA_to_HBD_ratio) VALUES ("%s","%s",%s);'%(hba,hbd,hba_to_hbd_ratio))
+                if is_tert == True:
+                    cur.execute('SELECT id,HBA_id,HBD_id,Other_id,HBA_to_HBD_ratio,Other_to_HBD_ratio from DES')
+                    all_des = cur.fetchall()
+                    des_key = []
+                    des_val = []
+                    for i in all_des:
+                        des_key.append(i[0])
+                        des_val.append(str(i[1])+str(i[2])+str(i[3])+str(i[4])+str(i[5]))
+                    des_dict = dict(map(reversed,zip(des_key,des_val)))
+                    des_temp = []
+                    for i in range(len(insert_df)):
+                        des_entry = str(insert_df['HBA_id'][i])+str(insert_df['HBD_id'][i])+str(insert_df['Other_id'][i])+str(round(insert_df['HBA_to_HBD_ratio'][i],6))+str(round(insert_df['Other_to_HBD_ratio'][i],6))
+                        des_temp.append(des_entry)
+                    insert_df['des_temp'] = des_temp
+                    insert_df['DES_id'] = insert_df['des_temp'].apply(lambda a: des_dict[a])
+                    insert_df = insert_df.drop(['HBA_id','HBD_id','Other_id','HBA_to_HBD_ratio','Other_to_HBD_ratio','des_temp'],axis=1)
+                else:
+                    cur.execute('SELECT id, HBA_id, HBD_id, HBA_to_HBD_ratio from DES')
+                    all_des = cur.fetchall()
+                    des_key = []
+                    des_val = []
+                    for i in all_des:
+                        des_key.append(i[0])
+                        des_val.append(str(i[1])+str(i[2])+str(i[3]))
+                    des_dict = dict(map(reversed,zip(des_key,des_val)))
+                    des_temp = []
+                    for i in range(len(insert_df)):
+                        des_entry = str(insert_df['HBA_id'][i])+str(insert_df['HBD_id'][i])+str(round(insert_df['HBA_to_HBD_ratio'][i],6))
+                        des_temp.append(des_entry)
+                    insert_df['des_temp'] = des_temp
+                    insert_df['DES_id'] = insert_df['des_temp'].apply(lambda a: des_dict[a])
+                    insert_df = insert_df.drop(['HBA_id','HBD_id','HBA_to_HBD_ratio','des_temp'],axis=1)
                 print('DES done!')
             
             mol_or_des_only = False

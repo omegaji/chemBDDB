@@ -100,6 +100,24 @@
       document.getElementById(add).disabled = false
     }
 
+    function bin_tert(n) {
+      let binTertValid = document.getElementById("is_tert_buttons");
+      if (binTertValid != null) { return }
+      if (n == 0)
+        var str = "<td><div class='p-2' id='is_tert_buttons'><p>Is the DES Binary or Tertiary?</p>"
+      str = str + "<div class='form-group' sytle='font-family:Exo;'>"
+      str = str + "<input name='is_tert' type='radio' id='binary' value='binary' required>"
+      str = str + "<label for='binary'>Binary DES</label><br>"
+      str = str + "<input name='is_tert' type='radio' id='tert' value='tert' required>"
+      str = str + "<label for='tert'>Tertiary DES</label>"
+      str = str + "</div></div></td>"
+
+      $('#db_table').append(str)
+      var add = 'add_' + n
+      document.getElementById(add).disabled = false
+    }
+
+
   </script>
 </head>
 
@@ -130,7 +148,8 @@
     {% if init %}
     <form name="insert_data_config" enctype="multipart/form-data" method="POST">
       <div class="form-group">
-        <table class="table table-bordered" border="0" style="align-content:center;font-family: Exo;">
+        <table class="table table-bordered" border="0" style="align-content:center;font-family: Exo;" name="db_table"
+          id="db_table">
           <col width="240">
           <col width="240">
           <col width="240">
@@ -154,9 +173,9 @@
               </div>
             </td>
             <td>
-              <div class="form-group" style="font-family:Exo;">
+              <div class="form-group" id="des_status_buttons" style="font-family:Exo;">
                 <p>DES or Molecule?</p>
-                <input name="des_status" type="radio" id="des" value="des" required>
+                <input name="des_status" type="radio" id="des" value="des" required onClick="bin_tert(0)">
                 <label for="des">DES</label>
                 <br>
                 <input name="des_status" type="radio" id="molecule" value="molecule" required>
@@ -167,9 +186,9 @@
               <div class="form-group" sytle="font-family:Exo;">
                 <p>Is all property data stored in a single column, or does each property have its own?</p>
                 <input name="prop_store" type="radio" id="single_col" value="single_col" required>
-                <label for="single_col">Single column</label>
+                <label for="single_col">Single</label>
                 <input name="prop_store" type="radio" id="multi_col" value="multi_col" required>
-                <label for="multi_col">Multiple columns</label>
+                <label for="multi_col">Multiple</label>
               </div>
             </td>
             <td>
@@ -205,8 +224,12 @@
       {% if data_validated %}
       <h4 style="font-family:Exo">Step 1: Molecule Identifiers</h4>
       {% if des_status %}
+      {% if is_tert %}
+      <h5 style="font-family:Exo">Select columns in your file that contain the HBA, HBD, and Other IDs and Ratios</h5>
+      {% else %}
       <h5 style="font-family:Exo">Select columns in your file that contain the HBA and HBD IDs and Ratios</h5>
-
+      {% endif %}
+      <!-- ENDS is_tert-->
       <div class="row">
         <div>
           <table class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
@@ -225,6 +248,7 @@
                 <h5>HBA MW</h5>
               </td>
               {% endif %}
+              <!--ENDS if mw_meta-->
             </tr>
             <tr>
               <td>
@@ -251,6 +275,7 @@
                 </select>
               </td>
               {% endif %}
+              <!--ENDS mw_meta-->
             </tr>
             </td>
             {% endfor %}
@@ -267,6 +292,7 @@
                 <h5>HBD MW</h5>
               </td>
               {% endif %}
+              <!--Ends mw_meta-->
             </tr>
             <tr>
               <td>
@@ -295,24 +321,90 @@
               </select>
             </td>
             {% endif %}
+            <!--End mw_meta-->
             {% endfor %}
             </tr>
+            {% if is_tert %}
             <tr>
               <td>
-                <h6>Ratio
+                <h5>Other</h5>
               </td>
-              </h6>
+              <td>
+                <h5>Other Compound Column</h5>
+              </td>
+              {% if mw_meta %}
+              <td>
+                <h5>Other MW</h5>
+              </td>
+              {% endif %}
+              <!--End mw_meta-->
             </tr>
             <tr>
               <td>
-                <select id="{{ratio_col}}_id" class='ratio_col' name="{{ratio_col}}_id">
-                  <option id="cols_0R" value="cols_0R">Select column name</option>
+                {% for Other_ident in
+                ['SMILES','Std_InChI','Std_InChI_Key','IUPAC_name','Other_name','CAS_registry_no','Chemical_formula'] %}
+            <tr>
+              <td><input id='1' type="checkbox" name="{{Other_ident}}col"
+                  value="{{Other_ident}}">&nbsp;&nbsp;{{Other_ident}}
+              </td>
+              <td>
+                <select id="{{Other_ident}}_id" class="Other_identifier" name="{{Other_ident}}_id">
+                  <option id="cols_0O" value="cols_0O">Select column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}"> {{c}}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              {% if mw_meta %}
+              <td>
+                <select id="{{Other_ident}}_mw" class="Other_MW" name="{{Other_ident}}_mw">
+                  <option id="cols_0O_MW" value="cols_0O_MW">Select column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}">{{c}}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              {% endif %}
+              <!--end mw_meta-->
+            </tr>
+            </td>
+            {% endfor %}
+            </tr>
+            {% endif %}
+            <!-- end is_tert-->
+            <tr>
+              <td>
+                {% if is_tert %}
+                <h6>Ratios</h6>
+                {% else %}
+                <h6>Ratio</h6>
+                {% endif %}
+                <!--end is_tert-->
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <select id="{{AD_ratio_col}}_id" class='AD_ratio_col' name="{{AD_ratio_col}}_id">
+                  <option id="cols_0RAD" value="cols_0RAD">Select HBA/HBD column name</option>
                   {% for c in cols %}
                   <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}">{{c}}</option>
                   {% endfor %}
                 </select>
               </td>
             </tr>
+            {% if is_tert %}
+            <tr>
+              <td>
+                <select id="{{OD_ratio_col}}_id" class="OD_ratio_col" name="{{OD_ratio_col}}_id">
+                  <option id="cols0RAO" value="cols_0RAO">Select Other/HBD column name</option>
+                  {% for c in cols %}
+                  <option id="cols_{{c}}" name="cols_{{c}}" value="{{c}}">{{c}}</option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            {% endif %}
+            <!--end is_tert-->
           </table>
         </div>
       </div>
@@ -539,6 +631,23 @@
     <h1>{{success_msg}}</h1>
     {%endif%}
   </div>
+
+  <script>
+    document.getElementsByName("des_status").forEach((element) => {
+      element.addEventListener('change', () => {
+        const values = document.getElementsByName("des_status")
+        if (values[0].checked) {
+          document.getElementsByName("is_tert").forEach((element) => { element.disabled = false })
+          document.querySelector('#is_tert_buttons').style.display = "block"
+        } else {
+          document.getElementsByName("is_tert").forEach((element) => { element.disabled = true })
+
+          document.querySelector('#is_tert_buttons').style.display = "none"
+        }
+      })
+    })
+
+  </script>
 </body>
 
 </html>
