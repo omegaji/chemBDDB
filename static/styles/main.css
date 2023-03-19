@@ -51,3 +51,19 @@ body {
     padding: 0.2rem;
     border-radius: 0.4rem;
 }
+
+.button {
+    width: fit-content;
+    padding: 0.3rem;
+    border-radius: 0.3rem;
+    background-color: #da3c28;
+    color: white
+}
+
+
+.db-list-title {
+    font-size: 1.4rem;
+
+    margin-top: 2rem;
+    width: fit-content;
+}

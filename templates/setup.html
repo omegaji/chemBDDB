@@ -42,11 +42,11 @@
         <meta charset="UTF-8">
         <form name='dbname' method='POST' class="form" action="/setup">
             <div class="form-group">
-                <label class="db-list-title" for="dbname">Enter database name</label>
+                <span class="db-list-title" for="dbname">Enter database name</span>
                 <input type="text" name='dbname' class="form-control" id="dbname" value='{{dbname}}'
                     placeholder="Enter database name here">
             </div>
-            <button type="create" name='create' class="create-button">Create</button>
+            <button type="create" name='create' class="button">Create</button>
         </form>
         {%if all_dbs %}
         <p class="db-list-title" href="#" id="navbarDropdownMenuLink">

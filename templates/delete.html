@@ -1,0 +1,53 @@
+<html>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+
+<link rel="stylesheet" href="/static/styles/main.css">
+<link rel="stylesheet" href="/static/styles/delete.css">
+
+<body>
+
+
+    <div class="nav">
+        <a href="/setup">
+            <div class="nav-button">⚙️ Setup</div>
+        </a>
+        <a href="/search">
+            <div class="nav-button">🔍 Search</div>
+        </a>
+        <a href="/delete">
+            <div class="nav-button  nav-selected">❌ Delete</div>
+        </a>
+        <a href="/temp_insert">
+            <div class="nav-button">🗳️ Insert</div>
+        </a>
+
+    </div>
+    <div class="delete-container">
+        <div>
+            {% if all_dbs%}
+            <form name="delete_form" method="post" action="/delete">
+                <div class="form-group">
+                    <span class="db-list-title">Select Database to Delete From</span>
+                    <select name="db_selected" style="height:fit-content" class="form-control">
+
+                        {% for adbs in all_dbs %}
+                        <option name={{adbs[0]}} value={{adbs[0]}}>{{adbs[0]}}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="radio" name="db_delete" value="YES" required>Yes
+                    <input type="radio" name="db_delete" value="NO" required>No
+                </div>
+                <button class="button" type="submit">Delete</button>
+            </form>
+
+            {%endif%}
+
+        </div>
+    </div>
+
+
+</body>
+
+</html>

@@ -1,0 +1,64 @@
+<html>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="//cdn.datatables.net/1.13.2/css/jquery.dataTables.min.css">
+
+<link rel="stylesheet" href="/static/styles/main.css">
+<link rel="stylesheet" href="/static/styles/view.css">
+
+
+<body>
+
+
+    <div class="nav">
+        <a href="/setup">
+            <div class="nav-button">⚙️ Setup</div>
+        </a>
+        <a href="/search">
+            <div class="nav-button">🔍 Search</div>
+        </a>
+        <a href="/delete">
+            <div class="nav-button ">❌ Delete</div>
+        </a>
+        <a href="/temp_insert">
+            <div class="nav-button">🗳️ Insert</div>
+        </a>
+
+    </div>
+    <div class="view-container">
+        <div>
+            {% if all_dbs%}
+            <form name="view_form" method="post" action="/view">
+                <div class="form-group">
+                    <span class="db-list-title">Select Database to View From</span>
+                    <select name="db_selected" style="height:fit-content" class="form-control"
+                        onchange="getTableNames()">
+
+                        {% for adbs in all_dbs %}
+                        <option name={{adbs[0]}} value={{adbs[0]}}>{{adbs[0]}}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="table_selected">
+
+                    </select>
+
+                </div>
+                <button class="button" type="submit" onclick="fetchTable(event)">Submit</button>
+            </form>
+            <div id="view-table" class="view-table">
+                Submit the form above to view the table! 📋
+            </div>
+            {%endif%}
+
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+    <script src="//cdn.datatables.net/1.13.2/js/jquery.dataTables.min.js"></script>
+    <script src="/static/js/view.js"></script>
+
+
+</body>
+
+</html>

@@ -2,25 +2,15 @@
     width: 50%;
     position: relative;
     left: 30%;
+    margin-top: 5%;
 }
 
 .div>input {
     border: 1px solid #645DD7;
 }
 
-.create-button {
-    background-color: #E2DADB;
-    color: #272D2D;
-    border-radius: 0.4rem;
-    margin-top: 0.2rem;
-}
 
-.db-list-title {
-    font-size: 1.2rem;
 
-    margin-top: 2rem;
-    width: fit-content;
-}
 
 .db-list {
     position: relative;

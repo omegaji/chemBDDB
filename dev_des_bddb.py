@@ -976,8 +976,48 @@ def temp_insert():
     else:
         # default landing page
         return render_template('temp_insert.html',all_dbs=all_dbs,init='True',snapshot='')
-       
+@app.route('/view',methods=['GET','POST'])
+def viewDB():
+    cur.execute("SHOW DATABASES LIKE '%_chembddb';")
+    all_dbs = cur.fetchall()
+
+    return render_template("viewDB.html",all_dbs=all_dbs)
+@app.route('/fetchTableNames',methods=["POST"])
+def fetchTableNames():
+    form=request.json
+    db = form["db_name"]
+    cur.execute('''
+    SELECT table_name FROM information_schema.tables
+    WHERE table_schema = '%s';
+    '''%db)
+    result=cur.fetchall()
+    cols=[x[0] for x in result]
+    return jsonify({
+        "cols":cols
+    })
+
+@app.route('/fetchTable',methods=["POST"])
+def fetchTable():
+    form=request.json
+    db = form["db_name"]
+    table=form["table_name"]
+    columnQuery='''
+    SELECT COLUMN_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s';
+    '''%(db,table)
+    cur.execute(columnQuery)
+    columns=[x[0] for x in cur.fetchall()]
+    cur.execute('''
+    SELECT * from %s.%s;
+    '''%(db,table))
+    result=cur.fetchall()
     
+    return jsonify({
+        "data":result,
+        "columns":[[x] for x in columns]
+    })
+
 @app.route('/search',methods=['GET','POST'])
 def search():
     global all_dbs
@@ -2107,9 +2147,16 @@ def show_databases():
         all databases
     
     """
-    cur.execute('SHOW DATABASES;')
+    cur.execute("SHOW DATABASES LIKE '%_chembddb';")
     all_dbs = cur.fetchall()
-    return(all_dbs)
+    
+    if request.method=="POST":
+        form=request.form
+        print(form)
+        if form["db_delete"]=="YES":
+            all_dbs=drop_database(form["db_selected"])
+            return render_template("delete.html",all_dbs=all_dbs)
+    return render_template("delete.html",all_dbs=all_dbs)
 
 def drop_database(db):
     """
@@ -2127,7 +2174,7 @@ def drop_database(db):
 
     """
     cur.execute('DROP DATABASE `%s`;'%(db))
-    cur.execute('SHOW DATABASES;')
+    cur.execute("SHOW DATABASES Like '%_chembddb';")
     all_dbs = cur.fetchall()
     print('Database %s has been dropped!'%db)
     return(all_dbs)
