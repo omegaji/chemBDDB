@@ -1289,8 +1289,8 @@ def search_db():
 
             
             data = data.convert_dtypes()
-            print('data_types\n',data.dtypes,'\n')
-
+            
+            # Finish calculations and convert to str for rendering
             desc = data.describe()
             data = data.astype('str')
             desc = desc.astype('str')
