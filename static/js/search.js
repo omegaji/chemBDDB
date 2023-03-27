@@ -3,10 +3,12 @@ let Meta = document.getElementById("search_meta_select")
 let form = document.getElementById("search_form");
 let smileSearch = document.getElementById("search_SMILES");
 let smileSearchHBD = document.getElementById("search_SMILES_HBD");
-let smileSearchHBA = document.getElementById("search_SMILES_HBA")
+let smileSearchHBA = document.getElementById("search_SMILES_HBA");
+let smileSearchOther = document.getElementById("search_SMILES_Other");
 let mwSearch = document.getElementById("search_MW");
-let hbdMwSearch = document.getElementById("search_HBD_MW")
-let hbaMwSearch = document.getElementById("search_HBA_MW")
+let hbdMwSearch = document.getElementById("search_HBD_MW");
+let hbaMwSearch = document.getElementById("search_HBA_MW");
+let otherMwSearch = document.getElementById("search_Other_MW")
 
 
 
@@ -42,6 +44,9 @@ const displaySmileSearch = (event) => {
     else if (event.target.name === "smiles_search_hbd") {
       smileSearchHBD.style.display = "flex"
     }
+    else if (event.target.name === "smiles_search_other") {
+      smileSearchOther.style.display = "flex"
+    }
     else {
       smileSearchHBA.style.display = "flex"
     }
@@ -53,6 +58,9 @@ const displaySmileSearch = (event) => {
     }
     else if (event.target.name === "smiles_search_hbd") {
       smileSearchHBD.style.display = "none"
+    }
+    else if (event.target.name === "smiles_search_other") {
+      smileSearchOther.style.display = "none"
     }
     else {
       smileSearchHBA.style.display = "none"
@@ -71,6 +79,9 @@ const displayMwSearch = (event) => {
     else if (event.target.name === "hbd_mw_search") {
       hbdMwSearch.style.display = "flex"
     }
+    else if (event.target.name === "other_mw_search") {
+      otherMwSearch.style.display = "flex"
+    }
     else {
       hbaMwSearch.style.display = "flex"
 
@@ -82,6 +93,9 @@ const displayMwSearch = (event) => {
     }
     else if (event.target.name === "hbd_mw_search") {
       hbdMwSearch.style.display = "none"
+    }
+    else if (event.target.name === "other_mw_search") {
+      otherMwSearch.style.display = "none"
     }
     else {
       hbaMwSearch.style.display = "none"
@@ -125,7 +139,7 @@ const generateTable = (div, sdb) => {
   }
 
   $('#search-table-table').DataTable(
-    { "lengthMenu": [5, 10, 15] }
+    { "lengthMenu": [5, 10, 25, 50] }
   );
 
 }
@@ -160,7 +174,8 @@ setMeta();
 smileSearch.style.display = "none"
 smileSearchHBA.style.display = "none"
 smileSearchHBD.style.display = "none"
+smileSearchOther.style.display = "none"
 mwSearch.style.display = "none"
 hbdMwSearch.style.display = "none"
 hbaMwSearch.style.display = "none"
-
+otherMwSearch.style.display = "none"
