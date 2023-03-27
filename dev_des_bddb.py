@@ -30,7 +30,6 @@ app.config['UPLOAD FOLDER']=upload_directory
 def post_process(sql, from_db,meta):
     """
     Helper function to post process the results from the database
-
     Parameters
     ----------
     sql: str
@@ -39,8 +38,6 @@ def post_process(sql, from_db,meta):
         results from the database
     meta: str
         specifies if Molecule or DES
-
-
     Returns
     -------
     data: pandas dataframe
@@ -77,38 +74,59 @@ def post_process(sql, from_db,meta):
             columns=[c.replace('(na)','') for c in columns]
         print("Molecule post-processing successful!")
     elif meta.lower() == 'des':
-        if '_MW' in sql and 'property' not in sql:
-            if 'HBA_MW' in sql and 'HBD_MW' in sql:
-                data = pd.DataFrame(list(from_db),columns=['DES_ID','HBA_ID','HBA_SMILES','HBA_MW','HBD_ID','HBD_SMILES','HBD_MW','ratio'])
-                columns = list(data.columns)
-            elif 'HBA_MW' in sql and 'HBD_MW' not in sql:
-                data = pd.DataFrame(list(from_db),columns=['DES_ID','HBA_ID','HBA_SMILES','HBA_MW','HBD_ID','HBD_SMILES','ratio'])
-                columns = list(data.columns)
-            elif 'HBD_MW' in sql and 'HBA_MW' not in sql:
-                data = pd.DataFrame(list(from_db),columns=['DES_ID','HBA_ID','HBA_SMILES','HBD_ID','HBD_SMILES','HBD_MW','ratio'])
-                columns = list(data.columns)
-        elif '_MW' not in sql and 'property' not in sql:
-            data = pd.DataFrame(list(from_db),columns = ['DES_ID','HBA_ID','HBA_SMILES','HBD_ID','HBD_SMILES','ratio'])
-            columns = list(data.columns)
-        else:
-            data = pd.DataFrame(list(from_db), columns=['DES_ID','HBA_ID','HBA_SMILES','HBA_MW','HBD_ID','HBD_SMILES','HBD_MW','ratio','Property','Value'])
+        # Commented code omits information for brevity, may create issues for user  
+
+        # if '_MW' in sql and 'property' not in sql:
+        #     if 'HBA_MW' in sql and 'HBD_MW' in sql and 'Other_MW' in sql:
+        #         data = pd.DataFrame(list(from_db),columns=['DES_ID','HBA_ID','HBA_SMILES','HBA_MW','HBD_ID','HBD_SMILES','HBD_MW','Other_ID','Other_SMILES','HBA_to_HBD_ratio','Other_to_HBD_ratio'])
+        #         columns = list(data.columns)
+        #     elif 'HBA_MW' in sql and 'HBD_MW' not in sql and 'Other_MW':
+        #         data = pd.DataFrame(list(from_db),columns=['DES_ID','HBA_ID','HBA_SMILES','HBA_MW','HBD_ID','HBD_SMILES','ratio'])
+        #         columns = list(data.columns)
+        #     elif 'HBD_MW' in sql and 'HBA_MW' not in sql:
+        #         data = pd.DataFrame(list(from_db),columns=['DES_ID','HBA_ID','HBA_SMILES','HBD_ID','HBD_SMILES','HBD_MW','ratio'])
+        #         columns = list(data.columns)
+        # elif '_MW' not in sql and 'property' not in sql:
+        #     data = pd.DataFrame(list(from_db),columns = ['DES_ID','HBA_ID','HBA_SMILES','HBD_ID','HBD_SMILES','Other_ID','Other_SMILES','HBA_to_HBD_ratio','Other_to_HBD_ratio'])
+        #     columns = list(data.columns)
+        # else:
+           
+            columns = ['DES_ID','HBA_ID','HBA_SMILES','HBA_MW','HBD_ID','HBD_SMILES','HBD_MW','Other_ID','Other_SMILES','Other_MW',
+                       'HBA_to_HBD_ratio','Other_to_HBD_ratio','Value','Property','Property_ID']
+            
+            data = pd.DataFrame(list(from_db), columns=columns)
+            data['index'] = list(range(1, len(data) + 1))
             data['HBA_ID_SMI'] = data['HBA_ID'].astype(str)+','+data['HBA_SMILES']
             data['HBD_ID_SMI'] = data['HBD_ID'].astype(str)+','+data['HBD_SMILES']
-            data['index'] = list(range(1, len(data) + 1))
-            data['ID_DES_ID_SMI'] = data['index'].astype(str)+','+data['DES_ID'].astype(str)+','+data['HBA_ID_SMI']+','+data['HBD_ID_SMI']+','+data['ratio'].astype(str)
-            data['Property']=data['Property'] # TODO: add method, functionals, basis_set, forcefields to this! (refer to molecule type in chembddb)
-            data = data[data.columns[-6:]]
+            data['Other_ID_SMI'] = data['Other_ID'].astype(str)+','+data['Other_SMILES']
+            
+            data['ID_DES_ID_SMI'] = data['index'].astype(str)+','+data['DES_ID'].astype(str)+','+data['HBA_ID_SMI']+','+data['HBD_ID_SMI']+','+data['Other_ID_SMI']+','+data['HBA_to_HBD_ratio'].astype(str)+','+data['Other_to_HBD_ratio'].astype(str)
+            # TODO: add method, functionals, basis_set, forcefields to this! (refer to molecule type in chembddb)
+            #print(data.columns)
+            #print(data)
+            
+            data = data[data.columns[-8:]]
+            #print(data)
+            
             data=data.pivot_table(index='ID_DES_ID_SMI',columns='Property',values='Value')
             data = data.reset_index()
-            data[['ID','DES_ID','HBA_ID','HBA_SMILES','HBD_ID','HBD_SMILES','ratio']] = data['ID_DES_ID_SMI'].str.split(',',expand=True)
-            columns=['DES_ID','HBA_SMILES','HBD_SMILES','ratio']
-            for i in data.columns[1:-4]:
-                columns.append(i)
+            #print(data['ID_DES_ID_SMI'].str.split(',', expand=True))
+            data[['ID','DES_ID','HBA_ID','HBA_SMILES','HBD_ID','HBD_SMILES','Other_ID','Other_SMILES','HBA_to_HBD_ratio','Other_to_HBD_ratio']] = data['ID_DES_ID_SMI'].str.split(',',expand=True)
+            #columns=['DES_ID','HBA_SMILES','HBD_SMILES','Other_SMILES','HBA_to_HBD_ratio','Other_to_HBD_ratio']
+            #for i in data.columns[1:-4]:
+                #columns.append(i)
+            
+            columns = data.columns.tolist()
             for i in columns:
-                if i == 'HBA_ID' or i == 'HBD_ID':
+                #if i == 'HBA_ID' or i == 'HBD_ID' or i=='Other_ID':
+                    #columns.remove(i)
+                if 'ID' in i and i != 'DES_ID':
+                    #print(i)
                     columns.remove(i)
-                if i == 'ID':
-                    columns.remove(i)
+                
+            
+            columns = columns[-6:]+columns[0:-5]
+            #print(columns)
             columns.pop()
             data = data[columns]
             data = data.T.drop_duplicates().T
@@ -116,7 +134,9 @@ def post_process(sql, from_db,meta):
             columns=[c.replace('(na/na)','') for c in columns]
             columns=[c.replace('(NA)','') for c in columns]
             columns=[c.replace('(na)','') for c in columns]
-        print("DES post-processing successful!")
+            #print(data.head())
+            #print(columns)
+    print("DES post-processing successful!")
     return data, columns
 
 @app.route('/')
@@ -126,7 +146,6 @@ def begin():
 def connect_mysql(host,user,pw):
     """
     Connects user to MySQL server
-
     Parameters
     ----------
     host: str
@@ -135,8 +154,6 @@ def connect_mysql(host,user,pw):
         user, root
     pw: str
         password, this will depend on the user's root password
-
-
     Returns
     -------
     cur: MySQL cursor
@@ -147,7 +164,6 @@ def connect_mysql(host,user,pw):
         connection with MySQL
     
     OR
-
     'invalid' 'credentials' '!': str
         indicates that the user had invalid credentials
     """
@@ -172,7 +188,6 @@ def connect_mysql(host,user,pw):
 @app.route('/connect',methods=['GET','POST'])
 def connect():
     """ establishes MySQL connection based on the credentials provided during setup
-
     Parameters
     ----------
     Returns
@@ -211,11 +226,10 @@ def connect():
 
 @app.route('/setup',methods=['POST','GET'])
 def create_schema(host=-1,user='',pw='',db=''):
-    print(host,user,pw,db)
+    #print(host,user,pw,db)
     """
     Calls connect_mysql function to connect user to MySQL server
     Creates database using ChemBDDB schema
-
     Parameters
     ----------
     host: str default=''
@@ -226,8 +240,6 @@ def create_schema(host=-1,user='',pw='',db=''):
         the password for MySQL
     db: str default=''
         the name of the database that needs to be set up
-
-
     Returns
     -------
     all_dbs: list of str
@@ -253,7 +265,7 @@ def create_schema(host=-1,user='',pw='',db=''):
         all_dbs=[]
         cur.execute('show databases;')
         all_dbs_tup=cur.fetchall()
-        print("all dbsssss")
+        print("all dbs")
         print(all_dbs)
         for i in all_dbs_tup:
             if '_chembddb' in i[0] and 'unit_list' not in i[0]:
@@ -322,7 +334,6 @@ def create_schema(host=-1,user='',pw='',db=''):
 def temp_insert():
     """
     Inserts csv data into database
-
     """
     global is_tert,all_dbs, db, data_file, cur, data,mol_ids,con,snapshot,prop_type,prop_store,sim_status,mw_cols,mw_meta
     global des_status,methods_list,functionals_list,basis_list,forcefield_list, molecule_identifiers, molecule_identifiers_cols
@@ -506,7 +517,7 @@ def temp_insert():
                     if value != ['cols_0A_MW','cols_0B_MW','cols_0O_MW']:
                         mw_cols.append(value)
             #molecule_identifiers = list(chain(*molecule_identifiers))
-            print(molecule_identifiers)
+
 
             remaining_cols = []
             for i in cols:
@@ -548,8 +559,7 @@ def temp_insert():
             else:
                 property_columns = meta_data['prop_id_0']
             mol_ids={}
-            print('property_columns:',property_columns)
-            print('data columns:',data.columns)
+            
             if des_status == True:
                 full_id_col = data[molecule_identifiers[0][0]].values.tolist() + data[molecule_identifiers[0][1]].values.tolist()
                 if is_tert == True:
@@ -563,8 +573,7 @@ def temp_insert():
                     molec_id.append(id)
                 else:
                     pass
-            print(request.form)
-            print(meta_data)
+            
             if des_status == True:
                 mol_ids.update({molecule_identifiers_cols[0][0]:molec_id})
             else:
@@ -767,7 +776,7 @@ def temp_insert():
                     mol_q = list(mol_ids.keys())[0] + ','
                     vals = '%s,%s,'
 
-                print(required_entries,'this is required_entries')
+                #print(required_entries,'this is required_entries')
                 for x in required_entries[0]:
                     can_smiles = pybel.readstring('smi',x[0]).write('can').strip()
                     cur.execute('INSERT INTO Molecule('+mol_q+'MW) VALUE('+vals[:-1]+')',(can_smiles,x[1]))
@@ -778,10 +787,10 @@ def temp_insert():
             all_props = cur.fetchall()
             prop_id = dict(map(reversed,all_props)) # reversed so that keys are the names of the properties and values are the id numbers
             mol_q = 'ID,'+ list(mol_ids.keys())[0]
-            print(mol_q,'This is mol_q')
+            #print(mol_q,'This is mol_q')
             cur.execute("SELECT "+mol_q+" from Molecule")
             all_mols = cur.fetchall()
-            print(all_mols,'this is all_mols')
+            #print(all_mols,'this is all_mols')
             molecule_id = dict(map(reversed,all_mols))
             insert_df = pd.DataFrame()
             if prop_store == True:
@@ -839,12 +848,14 @@ def temp_insert():
                     distinct_des_dict.update({i:distinct_des[i]})
                 
 
-                print(molecule_id,'this is molecule_id')
+                #print(molecule_id,'this is molecule_id')
                 distinct_des_df = pd.DataFrame(distinct_des_dict)
                 distinct_des_df = distinct_des_df.T
-                print(distinct_des_df[0],'this is distinct_des_df')
+                #print(distinct_des_df[0],'this is distinct_des_df')
                 distinct_des_df[0] = distinct_des_df[0].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
                 distinct_des_df[1] = distinct_des_df[1].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
+                if is_tert == True:
+                    distinct_des_df[2] = distinct_des_df[2].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
                 
                 insert_df['HBA'] = hba_list
                 insert_df['HBA_id']=insert_df['HBA'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
@@ -976,48 +987,8 @@ def temp_insert():
     else:
         # default landing page
         return render_template('temp_insert.html',all_dbs=all_dbs,init='True',snapshot='')
-@app.route('/view',methods=['GET','POST'])
-def viewDB():
-    cur.execute("SHOW DATABASES LIKE '%_chembddb';")
-    all_dbs = cur.fetchall()
-
-    return render_template("viewDB.html",all_dbs=all_dbs)
-@app.route('/fetchTableNames',methods=["POST"])
-def fetchTableNames():
-    form=request.json
-    db = form["db_name"]
-    cur.execute('''
-    SELECT table_name FROM information_schema.tables
-    WHERE table_schema = '%s';
-    '''%db)
-    result=cur.fetchall()
-    cols=[x[0] for x in result]
-    return jsonify({
-        "cols":cols
-    })
-
-@app.route('/fetchTable',methods=["POST"])
-def fetchTable():
-    form=request.json
-    db = form["db_name"]
-    table=form["table_name"]
-    columnQuery='''
-    SELECT COLUMN_NAME
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s';
-    '''%(db,table)
-    cur.execute(columnQuery)
-    columns=[x[0] for x in cur.fetchall()]
-    cur.execute('''
-    SELECT * from %s.%s;
-    '''%(db,table))
-    result=cur.fetchall()
+       
     
-    return jsonify({
-        "data":result,
-        "columns":[[x] for x in columns]
-    })
-
 @app.route('/search',methods=['GET','POST'])
 def search():
     global all_dbs
@@ -1028,7 +999,6 @@ def search_db():
 
     """
     Connects user to MySQL server
-
     Parameters
     ----------
     db: str
@@ -1079,7 +1049,6 @@ def search_db():
         'orderby_property':
             'select_order': str
                 If value is 'ascending', order will be changed to ascending order        
-
     Returns
     -------
     sdb: dict
@@ -1140,7 +1109,9 @@ def search_db():
         for pr in properties:
             p.append(list(pr))
         properties = p
+        #print(properties)
         if len(keys)>0:
+            # TODO: add functional, model, forcefields, basis set, etc
             sql = 'select value.molecule_id, molecule.SMILES, molecule.MW, Property.Property_str, value.num_value'
             sql = sql + ' from molecule inner join Value on molecule.id=value.molecule_id'
             sql = sql + ' inner join property on property.id=value.property_id'
@@ -1381,23 +1352,32 @@ def search_db():
             p.append(list(pr))
         properties = p
         if len(keys)>0:
+            # TODO: add value and propery id
             # TODO: add in basis_set, functionals, model, forcefield
             sql= 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
-            sql = sql + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id) '
-            sql = sql + 'SELECT value.des_id, des.hba_id, des_hba.HBA_SMILES, des_hba.HBA_MW, des.hbd_id, des_hbd.HBD_SMILES,des_hbd.HBD_MW, des.ratio, property.property_str, value.num_value FROM value '
-            sql = sql + 'INNER JOIN des on des.id = value.des_id '
-            sql = sql + 'INNER JOIN property on property.id = value.property_id '
-            sql = sql + 'INNER JOIN des_hba on des_hba.id = value.des_id '
-            sql = sql + 'INNER JOIN des_hbd on des_hbd.id = value.des_id '
+            sql = sql + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id), '
+            sql = sql + 'des_other AS (SELECT des.id, Other_id, SMILES as Other_SMILES, MW as Other_MW FROM des INNER JOIN molecule on molecule.id = des.other_id), '
+            sql = sql + 'prop AS (SELECT value.id, value.des_id, value.num_value, Property.Property_str as property_str, value.property_id as property_id FROM Value INNER JOIN Property on property.id = value.property_id) '
+            sql = sql + 'SELECT des.id, des.hba_id, des_hba.HBA_SMILES, des_hba.HBA_MW, des.hbd_id, des_hbd.HBD_SMILES, des_hbd.HBD_MW, des.other_id, des_other.Other_SMILES, des_other.Other_MW, '
+            sql = sql + 'des.HBA_to_HBD_ratio, des.Other_to_HBD_ratio, prop.num_value, prop.property_str, prop.property_id '
+            sql = sql + 'from des '
+            sql = sql + 'INNER JOIN des_hba on des_hba.id = des.id '
+            sql = sql + 'INNER JOIN des_hbd on des_hbd.id = des.id '
+            sql = sql + 'INNER JOIN des_other on des_other.id = des.id '
+            sql = sql + 'RIGHT JOIN prop on prop.des_id = des.id '
             sql = sql + 'where '
             counts_q = 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
-            counts_q = counts_q + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id) '
-            counts_q = counts_q + 'SELECT COUNT(*) FROM Value '
-            counts_q = counts_q + 'INNER JOIN des on des.id = value.des_id '
-            counts_q = counts_q + 'INNER JOIN property on property.id = value.property_id '
+            counts_q = counts_q + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id), '
+            counts_q = counts_q + 'des_other AS (SELECT des.id, Other_id, SMILES as Other_SMILES, MW as Other_MW FROM des INNER JOIN molecule on molecule.id = des.other_id), '
+            counts_q = counts_q + 'prop AS (SELECT value.id, value.des_id, value.num_value as num_value, value.property_id as property_id, Property.Property_str FROM Value INNER JOIN Property on property.id = value.property_id) '
+            counts_q = counts_q + 'SELECT COUNT(*) '
+            counts_q = counts_q + 'from value '
             counts_q = counts_q + 'INNER JOIN des_hba on des_hba.id = value.des_id '
             counts_q = counts_q + 'INNER JOIN des_hbd on des_hbd.id = value.des_id '
+            counts_q = counts_q + 'INNER JOIN des_other on des_other.id = value.des_id '
+            counts_q = counts_q + 'RIGHT JOIN prop on prop.des_id = value.des_id '
             counts_q = counts_q + 'where '
+            
             for k in keys:
                 prop_id= int(from_form[k])
                 props.append(prop_id)
@@ -1408,27 +1388,36 @@ def search_db():
                 properties[prop_id-1].append(to_val)
                 if from_val > to_val:
                     min_max_err=True
-                sql = sql[:sql.rfind('where')+6] + 'value.property_id = {0} and value.num_value > {1} and value.num_value < {2} and '.format(prop_id,from_val,to_val)+ sql[sql.rfind('where')+6:]
+                sql = sql[:sql.rfind('where')+6] + 'prop.property_id = {0} and prop.num_value > {1} and prop.num_value < {2} and '.format(prop_id,from_val,to_val)+ sql[sql.rfind('where')+6:]
                 counts_q = counts_q[:counts_q.rfind('where')+6] + 'value.property_id = {0} and value.num_value > {1} and value.num_value < {2} and '.format(prop_id,from_val,to_val)+ counts_q[counts_q.rfind('where')+6:]
             if len(keys)!=0:
                 sql=sql[:-5]
                 counts_q = counts_q[:-5]
-            valsid=' and value.property_id in '
+            valsid=' and prop.property_id in '
             for i in range(len(props)):
                 if i > 0:
                     valsid = valsid + ',' + str(props[i])
                 else:
                     valsid = valsid + '(' + str(props[i])
             valsid = valsid + ')'
+            #print(valsid)
             sql =  sql + valsid + ' '
-            counts_q = counts_q + valsid + ';'
+            counts_q = counts_q + valsid.replace('prop.','value.') + ';'
         else:
-            # TODO: add functionals, model, basis_sets, and forcefield
+            # TODO: 
+            # add value and property id
+            # add functionals, model, basis_sets, and forcefield
             sql= 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
-            sql = sql + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id) '
-            sql = sql + 'SELECT des.id, des.hba_id, des_hba.HBA_SMILES, des_hba.HBA_MW, des.hbd_id, des_hbd.HBD_SMILES,des_hbd.HBD_MW, ratio from des '
+            sql = sql + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id), '
+            sql = sql + 'des_other AS (SELECT des.id, Other_id, SMILES as Other_SMILES, MW as Other_MW FROM des INNER JOIN molecule on molecule.id = des.other_id), '
+            sql = sql + 'prop AS (SELECT value.id, value.des_id, value.num_value, Property.Property_str as property_str, value.property_id as property_id FROM Value INNER JOIN Property on property.id = value.property_id) '
+            sql = sql + 'SELECT des.id, des.hba_id, des_hba.HBA_SMILES, des_hba.HBA_MW, des.hbd_id, des_hbd.HBD_SMILES, des_hbd.HBD_MW, des.other_id, des_other.Other_SMILES, des_other.Other_MW, '
+            sql = sql + 'des.HBA_to_HBD_ratio, des.Other_to_HBD_ratio, prop.num_value, prop.property_str, prop.property_id '
+            sql = sql + 'from des '
             sql = sql + 'INNER JOIN des_hba on des_hba.id = des.id '
             sql = sql + 'INNER JOIN des_hbd on des_hbd.id = des.id '
+            sql = sql + 'INNER JOIN des_other on des_other.id = des.id '
+            sql = sql + 'RIGHT JOIN prop on prop.des_id = des.id '
             sql = sql + 'where '
         HBA_MW_to = None
         # sql = 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
@@ -1444,9 +1433,9 @@ def search_db():
             if HBA_from_val > HBA_to_val:
                 min_max_err=True
             if len(keys)!=0:
-                sql = sql+" and des_hba.HBA_MW > {} and des_hba.HBA_MW < {} ".format(float(from_form['HBA_MW_from_val']),float(from_form['HBA_MW_to_val']))
+                sql = sql+" and des_hba.HBA_MW > {} and des_hba.HBA_MW < {} ".format(HBA_MW_from,HBA_MW_to)
             else:
-                sql = sql + 'des_hba.HBA_MW > {} and des_hba.HBA_MW < {} '.format(float(from_form['HBA_MW_from_val']),float(from_form['HBA_MW_to_val']))
+                sql = sql + 'des_hba.HBA_MW > {} and des_hba.HBA_MW < {} '.format(HBA_MW_from,HBA_MW_to)
                 keys.append('HBA_MW')
         HBD_MW_to = None
         if 'HBD_MW' in from_form:
@@ -1458,24 +1447,65 @@ def search_db():
             if HBD_from_val > HBD_to_val:
                 min_max_err=True
             if len(keys)!=0:
-                sql = sql+" and des_hbd.HBD_MW > {} and des_hbd.HBD_MW < {} ".format(float(from_form['HBD_MW_from_val']),float(from_form['HBD_MW_to_val']))
+                sql = sql+" and des_hbd.HBD_MW > {} and des_hbd.HBD_MW < {} ".format(HBD_MW_from,HBD_MW_to)
             else:
-                sql = sql + 'des_hbd.HBD_MW > {} and des_hbd.HBD_MW < {} '.format(float(from_form['HBD_MW_from_val']),float(from_form['HBD_MW_to_val']))
+                sql = sql + 'des_hbd.HBD_MW > {} and des_hbd.HBD_MW < {} '.format(HBD_MW_from,HBD_MW_to)
                 keys.append('HBD_MW')
-        if 'smiles_search' in from_form:
+        if 'Other_MW' in from_form:
+            # search for des containing Other by MW
+            Other_from_val = float(from_form['Other_MW_from_val'])
+            Other_to_val =float(from_form['Other_MW_to_val'])
+            Other_MW_from = Other_from_val
+            Other_MW_to = Other_to_val
+            if Other_from_val > Other_to_val:
+                min_max_err = True
+            if len(keys)!=0:
+                sql = sql+" and des_other.Other_MW > {} and des_other.Other_MW < {} ".format(Other_from_val,Other_to_val)
+            else:
+                sql = sql +'des_other.Other_MW > {} and des_other.Other_MW < {} '.format(Other_MW_from,Other_MW_to)
+                keys.append('Other_MW')
+        #print(from_form.keys())
+        from_form_keys = from_form.keys()
+        if 'smiles_search_hba' in from_form_keys or 'smiles_search_hbd' in from_form_keys or 'smiles_search_other' in from_form_keys:
+            #print('we are here:')
+            #print('this is from_form:', from_form)
+
+            possible_smiles = ['HBA_SMILES','HBD_SMILES','Other_SMILES']
+
+
             if len(keys)==0:
-                sql= 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
-                sql = sql + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES FROM des INNER JOIN molecule on molecule.id = des.hbd_id) '
-                sql = sql + 'SELECT des.id, des.hba_id, des_hba.HBA_SMILES, des.hbd_id, des_hbd.HBD_SMILES, des.ratio from des '
+                sql= 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
+                sql = sql + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id), '
+                sql = sql + 'des_other AS (SELECT des.id, Other_id, SMILES as Other_SMILES, MW as Other_MW FROM des INNER JOIN molecule on molecule.id = des.other_id), '
+                sql = sql + 'prop AS (SELECT value.id, value.des_id, value.num_value, Property.Property_str, value.property_id FROM Value INNER JOIN Property on property.id = value.property_id) '
+                sql = sql + 'SELECT des.id, des.hba_id, des_hba.HBA_SMILES, des_hba.HBA_MW, des.hbd_id, des_hbd.HBD_SMILES, des_hbd.HBD_MW, des.other_id, des_other.Other_SMILES, des_other.Other_MW, '
+                sql = sql + 'des.HBA_to_HBD_ratio, des.Other_to_HBD_ratio, prop.num_value, prop.property_str, prop.property_id '
+                sql = sql + 'from des '
                 sql = sql + 'INNER JOIN des_hba on des_hba.id = des.id '
                 sql = sql + 'INNER JOIN des_hbd on des_hbd.id = des.id '
-                if 'HBA_SMILES' in from_form and 'HBD_SMILES' in from_form:
+                sql = sql + 'INNER JOIN des_other on des_other.id = des.id '
+                sql = sql + 'RIGHT JOIN prop on prop.des_id = des.id '
+
+                
+                for i in possible_smiles:
+                    try:
+                        from_form.update({i:pybel.readstring('smi',from_form[i]).write('can').strip()})
+                    except:
+                        pass
+
+
+                if 'smiles_search_hba' in from_form and 'smiles_search_hbd' in from_form:
                     sql = sql + 'WHERE HBA_SMILES = "%s" '%(from_form['HBA_SMILES'])
                     sql = sql + 'AND HBD_SMILES = "%s" '%(from_form['HBD_SMILES'])
-                elif 'HBA_SMILES' in from_form and 'HBD_SMILES' not in from_form:
+                elif 'smiles_search_hba' in from_form and 'smiles_search_hbd' not in from_form:
                     sql = sql + 'WHERE HBA_SMILES = "%s" '%(from_form['HBA_SMILES'])
-                elif 'HBD_SMILES' in from_form and 'HBA_SMILES' not in from_form:
+                elif 'smiles_search_hbd' in from_form and 'smiles_search_hba' not in from_form:
                     sql = sql + 'WHERE HBD_SMILES = "%s" '%(from_form['HBD_SMILES'])
+                elif 'smiles_search_other' in from_form:
+                    if 'HBA_SMILES' not in from_form and 'HBD_SMILES' not in from_form:
+                        sql = sql + 'WHERE Other_SMILES = "%s" '%(from_form['Other_SMILES'])
+                    else:
+                        sql = sql + 'And Other_SMILES = "%s" '%(from_form['Other_SMILES'])
                 
         if 'method' in from_form:
             met_id=0
@@ -1502,9 +1532,11 @@ def search_db():
             else:
                 sql=sql+' and Value.forcefield_id={}'.format(from_form['forcefield'])
         
-        if len(keys) <= 0 or 'HBA_MW' in from_form or 'HBD_MW' in from_form:
+        if len(keys) <= 0 or 'HBA_MW' in from_form or 'HBD_MW' in from_form or 'Other_MW' in from_form:
             counts_q= 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
-            counts_q = counts_q + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id) '
+            counts_q = counts_q + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id), '
+            counts_q = counts_q + 'des_other AS (SELECT des.id, Other_id, SMILES as Other_SMILES, MW as Other_MW from des INNER JOIN molecule on molecule.id = des.other_id), '
+            counts_q = counts_q + 'prop AS (SELECT value.id, value.des_id, value.num_value, Property.Property_str, value.property_id FROM Value INNER JOIN Property on property.id = value.property_id) '
             counts_q =counts_q + 'select count(*) '+sql[sql.find('from'):] +';'
        
         # because smiles_search will get all results from the db because substructure matching is required
@@ -1513,13 +1545,13 @@ def search_db():
         else:
             if 'all' not in meta:
                 sql = sql + 'limit 50'
-          
+            print('Counts Query:\n',counts_q,'\n')
             cur.execute(counts_q)
             counts = cur.fetchall()
             counts = counts[0][0]
 
         sql=sql+';'
-        print(sql)
+        #print(sql)
         # query creation ends here
         temp_col = []
         temp_met = []
@@ -1570,14 +1602,27 @@ def search_db():
                         'n_res': n_res,
                         'all_dbs': all_dbs
                     }
+            if 'Other_MW' in from_form and len(sdb) != 0:
+                sdb.update({'Other_MW_from': Other_MW_from, 'Other_MW_to': Other_MW_to})
+            elif 'Other_MW' in from_form and len(sdb) == 0:
+                sdb = {
+                    'Other_MW_from': Other_MW_from,
+                    'Other_MW_to': Other_MW_to,
+                    'properties': properties,
+                    'columns': columns,
+                    'methods': methods,
+                    'n_res': n_res,
+                    'all_dbs': all_dbs
+                }
         else:
             # executing the query
             print('\nMySQL search query: ')
             print(sql + '\n')
             cur.execute(sql)
             data1 = cur.fetchall()
+            #print(data1)
             data,columns = post_process(sql, data1, 'des')
-            print(data.head())
+            #print(data.head())
             # the following section is just to format the column headers that appear on the html page
             for c in columns:
                 if '-' in c:
@@ -1594,7 +1639,9 @@ def search_db():
                     temp_col.append(c)
             # substructure matching using pybel
             try:
-                smi_val = None
+                smi_valA = None
+                smi_valD = None
+                smi_valO = None
                 if 'smiles_search' in from_form:
                     if 'HBA_SMILES' in from_form:
                         # SMARTS only works for the organic compounds, not for the salt. Getting rid of ions to get SMARTS for other part
@@ -1639,6 +1686,23 @@ def search_db():
                         else:
                             search_results = data
                             search_results.columns = data.columns
+                    if 'Other_SMILES' in from_form:
+                        smartsO = pybel.Smarts(from_form['Other_SMILES'])
+                        smi_valO = smartsO
+                        for i in range(len(data)):
+                            molO = pybel.readstring("smi",data.loc[i]['Other_SMILES'])
+                            smartsO.obsmarts.Match(molO.OBMol)
+                            if len(smartsO.findall(molO))==0:
+                                data.drop(i,axis=0,inplace=True)
+                        if len(data)==0:
+                            n_res='Number of results='+str(len(data))+'\nNo such candidates exist in your database.'
+                        else:
+                            n_res = len(data)
+                            counts=n_res
+                        if n_res>50:
+                            search_results = data
+                            search_results.columns = data.columns
+                            data=data[:51]
                 elif len(keys)>1:
                     if len(data)==0:
                         n_res='Number of results= '+str(len(data))+'.\nNo such candidates exist in your database.'
@@ -1665,7 +1729,7 @@ def search_db():
                 print('n_res is ' + n_res)
             if len(keys) == 1:
                 n_res = counts
-            desc = ['','']
+            #desc = ['','']
             columns = []
             # creating tuple of tuples for column headers (required for html page)
             for i in range(len(temp_met)):
@@ -1675,10 +1739,20 @@ def search_db():
             for i in properties:
                 property_names.append(i[1])
             data = data.convert_dtypes()
-            for i in data.columns:
-                if i in property_names:
-                    desc.append('mean={}, std={}, min={}, max={}'.format(data[i].describe()['mean'].round(2),data[i].describe()['std'].round(2),data[i].describe()['min'].round(2),data[i].describe()['max'].round(2)))
+            #for i in data.columns:
+                #if i in property_names:
+                    #desc.append('mean={}, std={}, min={}, max={}'.format(data[i].describe()['mean'].round(2),data[i].describe()['std'].round(2),data[i].describe()['min'].round(2),data[i].describe()['max'].round(2)))
+            
+            desc = data.describe()
+            #print(desc)
+            desc = desc.fillna(np.nan).replace([np.nan],[None])
+            data = data.fillna(np.nan).replace([np.nan],[None])
+            desc = desc.astype(str)
+            desc = tuple(desc.itertuples(index=False,name=None))
+            #print(data)
             data = tuple(data.itertuples(index=False,name=None))
+            #print('this is data:\n',data)
+            #print('this is desc:\n',desc)
             if len(columns) == 2:
                 to_order = False
             else:
@@ -1745,6 +1819,26 @@ def search_db():
                     'noprev': noprev,
                     'nonext': nonext
                 }
+            if 'Other_MW' in from_form and len(sdb) != 0:
+                sdb.update({'Other_MW_from':Other_MW_from,'Other_MW_to':Other_MW_to})
+            elif 'Other_MW' in from_form and len(sdb) == 0:
+                sdb = {
+                    'ini': ini,
+                    'fin': fin,
+                    'Other_MW_from': HBD_MW_from,
+                    'Other_MW_to': HBD_MW_to,
+                    'data': data,
+                    'properties': properties,
+                    'columns': columns,
+                    'temp_met': temp_met,
+                    'n_res': n_res,
+                    'to_order': to_order,
+                    'all_dbs': all_dbs,
+                    'desc': desc,
+                    'noprev': noprev,
+                    'nonext': nonext
+                }
+                
             else:
                 sdb = {
                     'ini': 0,
@@ -2134,6 +2228,9 @@ def search_db():
         #return(sdb)
     cur.execute('SHOW DATABASES;')
     all_dbs = cur.fetchall()
+    
+    
+    
     return render_template("search.html",sdb=sdb,all_dbs=all_dbs)
 
 @app.route('/delete',methods=['GET','POST'])
@@ -2236,6 +2333,47 @@ def backup_restore(host='',user='',pw='',db='',filename=''):
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD FOLDER'],filename)
+@app.route('/view',methods=['GET','POST'])
+def viewDB():
+    cur.execute("SHOW DATABASES LIKE '%_chembddb';")
+    all_dbs = cur.fetchall()
+
+    return render_template("viewDB.html",all_dbs=all_dbs)
+@app.route('/fetchTableNames',methods=["POST"])
+def fetchTableNames():
+    form=request.json
+    db = form["db_name"]
+    cur.execute('''
+    SELECT table_name FROM information_schema.tables
+    WHERE table_schema = '%s';
+    '''%db)
+    result=cur.fetchall()
+    cols=[x[0] for x in result]
+    return jsonify({
+        "cols":cols
+    })
+
+@app.route('/fetchTable',methods=["POST"])
+def fetchTable():
+    form=request.json
+    db = form["db_name"]
+    table=form["table_name"]
+    columnQuery='''
+    SELECT COLUMN_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s';
+    '''%(db,table)
+    cur.execute(columnQuery)
+    columns=[x[0] for x in cur.fetchall()]
+    cur.execute('''
+    SELECT * from %s.%s;
+    '''%(db,table))
+    result=cur.fetchall()
+    
+    return jsonify({
+        "data":result,
+        "columns":[[x] for x in columns]
+    })
 
 def run_config():
     print('Open http://localhost:5000/connect')
