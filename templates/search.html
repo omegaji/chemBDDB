@@ -78,17 +78,17 @@
 
             <div class='search-item '>
                 <div class='search-label'>
-                    Property_id
+                    Property: Id
                 </div>
                 <div class="search-input">
-                    <input name="property_id" type="number" required />
+                    <input name="property_id" type="number"  /> <!--required-->
                 </div>
 
             </div>
 
             <div class='search-item '>
                 <div class='search-label'>
-                    property_from_val
+                    Property: Lower Limit
                 </div>
                 <div class="search-input">
                     <input name="property_from_val" type="number" />
@@ -98,10 +98,10 @@
 
             <div class='search-item '>
                 <div class='search-label'>
-                    property_to_val
+                    Property: Upper Limit
                 </div>
                 <div class="search-input">
-                    <input name="property_to_val" type="number" required />
+                    <input name="property_to_val" type="number" /> <!--required-->
                 </div>
 
             </div>
@@ -110,7 +110,7 @@
             <div class="search-molecule">
                 <div class='search-item '>
                     <div class='search-label'>
-                        Smile Search
+                        SMILES Search:
                     </div>
                     <div class="search-input">
                         <input type="radio" onclick='displaySmileSearch(event)' name="smiles_search"
@@ -122,7 +122,7 @@
                 </div>
                 <div id="search_SMILES" class='search-item '>
                     <div class='search-label'>
-                        SMILES
+                        SMILES:
                     </div>
                     <div class="search-input">
                         <input name="SMILES" type="text" />
@@ -132,7 +132,7 @@
 
                 <div class='search-item '>
                     <div class='search-label'>
-                        MW
+                        MW:
                     </div>
                     <div class="search-input">
                         <input type="radio" onclick='displayMwSearch(event)' name="mw_search"
@@ -144,14 +144,14 @@
                 </div>
                 <div id="search_MW" class='search-item '>
                     <div class='search-label'>
-                        MW_From
+                        MW: Lower Limit
                     </div>
                     <div class="search-input">
                         <input name="MW_from_val" type="number" />
                     </div>
 
                     <div class='search-label'>
-                        MW_to
+                        MW: Upper Limit
                     </div>
                     <div class="search-input">
                         <input name="MW_to_val" type="number" />
@@ -165,7 +165,7 @@
             <div class="search-des">
                 <div class='search-item '>
                     <div class='search-label'>
-                        Smile Search HBA
+                        SMILES Search HBA:
                     </div>
                     <div class="search-input">
                         <input type="radio" onclick='displaySmileSearch(event)' name="smiles_search_hba"
@@ -177,7 +177,7 @@
                 </div>
                 <div id="search_SMILES_HBA" class='search-item '>
                     <div class='search-label'>
-                        SMILES_HBA
+                        HBA SMILES:
                     </div>
                     <div class="search-input">
                         <input name="HBA_SMILES" type="text" />
@@ -187,7 +187,7 @@
 
                 <div class='search-item '>
                     <div class='search-label'>
-                        Smile Search HBD
+                        SMILES Search HBD:
                     </div>
                     <div class="search-input">
                         <input type="radio" onclick='displaySmileSearch(event)' name="smiles_search_hbd"
@@ -199,10 +199,32 @@
                 </div>
                 <div id="search_SMILES_HBD" class='search-item '>
                     <div class='search-label'>
-                        SMILES_HBD
+                        HBD SMILES:
                     </div>
                     <div class="search-input">
                         <input name="HBD_SMILES" type="text" />
+                    </div>
+
+                </div>
+                
+                <div class='search-item '>
+                    <div class='search-label'>
+                        Other SMILES Search:
+                    </div>
+                    <div class="search-input">
+                        <input type="radio" onclick='displaySmileSearch(event)' name="smiles_search_other"
+                            value="Yes" /><span>Yes</span>
+                        <input type="radio" onclick='displaySmileSearch(event)' name="smiles_search_other"
+                            value="No" /><span>No</span>
+                    </div>
+
+                </div>
+                <div id="search_SMILES_Other" class='search-item '>
+                    <div class='search-label'>
+                        Other SMILES:
+                    </div>
+                    <div class="search-input">
+                        <input name="Other_SMILES" type="text" />
                     </div>
 
                 </div>
@@ -212,7 +234,7 @@
 
                 <div class='search-item '>
                     <div class='search-label'>
-                        HBA_MW
+                        HBA MW:
                     </div>
                     <div class="search-input">
                         <input type="radio" onclick='displayMwSearch(event)' name="hba_mw_search"
@@ -224,26 +246,23 @@
                 </div>
                 <div id="search_HBA_MW" class='search-item '>
                     <div class='search-label'>
-                        HBA_MW_From
+                        HBA MW: Lower Limit
                     </div>
                     <div class="search-input">
                         <input name="HBA_MW_from_val" type="number" />
                     </div>
 
                     <div class='search-label'>
-                        HBA_MW_to
+                        HBA MW: Upper Limit
                     </div>
                     <div class="search-input">
                         <input name="HBA_MW_to_val" type="number" />
                     </div>
                 </div>
 
-
-
-
                 <div class='search-item '>
                     <div class='search-label'>
-                        HBD_MW
+                        HBD MW:
                     </div>
                     <div class="search-input">
                         <input type="radio" onclick='displayMwSearch(event)' name="hbd_mw_search"
@@ -255,22 +274,53 @@
                 </div>
                 <div id="search_HBD_MW" class='search-item '>
                     <div class='search-label'>
-                        HBD_MW_From
+                        HBD MW: Lower Limit
                     </div>
                     <div class="search-input">
                         <input name="HBD_MW_from_val" type="number" />
                     </div>
 
                     <div class='search-label'>
-                        HBD_MW_to
+                        HBD MW: Upper Limit
                     </div>
                     <div class="search-input">
                         <input name="HBD_MW_to_val" type="number" />
                     </div>
                 </div>
+
+                <div class='search-item '>
+                    <div class='search-label'>
+                        Other MW:
+                    </div>
+                    <div class="search-input">
+                        <input type="radio" onclick='displayMwSearch(event)' name="other_mw_search"
+                            value="Yes" /><span>Yes</span>
+                        <input type="radio" onclick='displayMwSearch(event)' name="other_mw_search"
+                            value="No" /><span>No</span>
+                    </div>
+
+                </div>
+                
+                <div id="search_Other_MW" class='search-item '>
+                    <div class='search-label'>
+                        Other MW: Lower Limit
+                    </div>
+                    <div class="search-input">
+                        <input name="other_MW_from_val" type="number" />
+                    </div>
+
+                    <div class='search-label'>
+                        Other MW: Upper Limit
+                    </div>
+                    <div class="search-input">
+                        <input name="other_MW_to_val" type="number" />
+                    </div>
+                </div>
+                
+                
             </div>
 
-            <button type="submit" class='button'>
+            <button type="submit" class='search-button'>
                 Search
             </button>
 
