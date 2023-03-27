@@ -51,7 +51,7 @@ def post_process(sql, from_db,meta):
             data = pd.DataFrame(list(from_db), columns=['ID','SMILES','MW'])
             columns = list(data.columns)
         elif 'MW' not in sql and 'property' not in sql:
-            data = pd.DataFrame(list(from_db),columns = ['ID','SMILES'])
+            data = pd.DataFrame(list(from_db),columns = ['ID','SMILES','MW'])
             columns = list(data.columns)
         else:
             data = pd.DataFrame(list(from_db), columns=['Molecule_id','SMILES','MW','Property','Value'])
@@ -67,11 +67,12 @@ def post_process(sql, from_db,meta):
             columns.pop()
             data = data[columns]
             data = data.T.drop_duplicates().T
-            data.MW = data.MW.astype('float')
+            
             columns=[c.replace('(NA/NA)','') for c in columns]
             columns=[c.replace('(na/na)','') for c in columns]
             columns=[c.replace('(NA)','') for c in columns]
             columns=[c.replace('(na)','') for c in columns]
+        
         print("Molecule post-processing successful!")
     elif meta.lower() == 'des':
         # Commented code omits information for brevity, may create issues for user  
@@ -124,7 +125,6 @@ def post_process(sql, from_db,meta):
                     #print(i)
                     columns.remove(i)
                 
-            
             columns = columns[-6:]+columns[0:-5]
             #print(columns)
             columns.pop()
@@ -136,7 +136,7 @@ def post_process(sql, from_db,meta):
             columns=[c.replace('(na)','') for c in columns]
             #print(data.head())
             #print(columns)
-    print("DES post-processing successful!")
+            print("DES post-processing successful!")
     return data, columns
 
 @app.route('/')
@@ -1060,6 +1060,7 @@ def search_db():
     cur.execute('show databases;')
     all_dbs_tup=cur.fetchall()
     from_form=request.form
+    print('from_form:\n',from_form,'\n')
     #print(all_dbs_tup)
     # for i in all_dbs_tup:
     #     if '_chembddb' in i[0] and 'unit_list' not in i[0]:
@@ -1146,9 +1147,9 @@ def search_db():
                     counts_q = counts_q+valsid
         else:
             sql = 'SELECT ID, SMILES, MW from Molecule where '
-            counts_q = 'SELECT COUNT(*) FROM molecule where '
+            counts_q = 'SELECT COUNT(*) FROM Molecule where '
         MW_to = None
-        if 'MW' in from_form:
+        if 'mw_search' in from_form.keys():
             from_val=float(from_form['MW_from_val'])
             to_val=float(from_form['MW_to_val'])
             MW_from = from_val
@@ -1159,13 +1160,12 @@ def search_db():
                 sql = sql+" and molecule.MW > {} and molecule.MW < {} ".format(float(from_form['MW_from_val']),float(from_form['MW_to_val']))
                 counts_q = counts_q + " and molecule.MW > {} and molecule.MW < {} ".format(float(from_form['MW_from_val']),float(from_form['MW_to_val']))
             else:
-                sql="select id, SMILES, MW from molecule where molecule.MW > {} and molecule.MW < {} ".format(float(from_form['MW_from_val']),float(from_form['MW_to_val']))
-                counts_q = "SELECT COUNT(*) FROM molecule where molecule.MW > {} and molecule.MW < {} ".format(float(from_form['MW_from_val']),float(from_form['MW_to_val']))
+                sql= sql + "molecule.MW > {} and molecule.MW < {} ".format(float(from_form['MW_from_val']),float(from_form['MW_to_val']))
+                counts_q = counts_q + " molecule.MW > {} and molecule.MW < {} ".format(float(from_form['MW_from_val']),float(from_form['MW_to_val']))
                 keys.append('MW')
         if 'smiles_search' in from_form:
-            if len(keys)==0:
-                sql = 'SELECT ID, SMILES FROM molecule '
-                sql = sql + 'WHERE SMILES = "%s" '%(from_form['SMILES'])
+            sql = sql + 'SMILES = "%s" '%(from_form['SMILES'])
+            counts_q = counts_q + 'SMILES = "%s" '%(from_form['SMILES'])
             
             # insert ff, basis, method, func if statements from chembddb code
 
@@ -1174,8 +1174,7 @@ def search_db():
         if ('property' not in sql and 'MW' not in sql) or len(keys)>1:
             counts = -1
         else:
-            if 'all' not in meta:
-                sql = sql + 'limit 50'
+            print('counts_q query:\n',counts_q,'\n')
             cur.execute(counts_q)
             counts = cur.fetchall()
             counts = counts[0][0]
@@ -1286,10 +1285,16 @@ def search_db():
             property_names = []
             for i in properties:
                 property_names.append(i[1])
+            
+
+            
             data = data.convert_dtypes()
-            for i in data.columns:
-                if i in property_names:
-                    desc.append('mean={}, std={}, min={}, max={}'.format(data[i].describe()['mean'].round(2),data[i].describe()['std'].round(2),data[i].describe()['min'].round(2),data[i].describe()['max'].round(2)))
+            
+            # Finish calculations and convert to str for rendering
+            desc = data.describe()
+            data = data.astype('str')
+            desc = desc.astype('str')
+            desc = tuple(data.itertuples(index=False,name=None))
             data = tuple(data.itertuples(index=False,name=None))
             if len(columns) == 2:
                 to_order = False
@@ -1304,7 +1309,7 @@ def search_db():
             else:
                 nonext=False
                 fin=50
-            if 'MW' in from_form:
+            if 'mw_search' in from_form.keys():
                 sdb = {
                     'ini': ini,
                     'fin': fin,
@@ -1491,21 +1496,21 @@ def search_db():
                     try:
                         from_form.update({i:pybel.readstring('smi',from_form[i]).write('can').strip()})
                     except:
-                        pass
+                        print('Invalid SMILES for '+i+'!\n')
 
 
-                if 'smiles_search_hba' in from_form and 'smiles_search_hbd' in from_form:
+                if 'smiles_search_hba' in from_form_keys and 'smiles_search_hbd' in from_form_keys:
                     sql = sql + 'WHERE HBA_SMILES = "%s" '%(from_form['HBA_SMILES'])
                     sql = sql + 'AND HBD_SMILES = "%s" '%(from_form['HBD_SMILES'])
-                elif 'smiles_search_hba' in from_form and 'smiles_search_hbd' not in from_form:
+                elif 'smiles_search_hba' in from_form_keys and 'smiles_search_hbd' not in from_form_keys:
                     sql = sql + 'WHERE HBA_SMILES = "%s" '%(from_form['HBA_SMILES'])
                 elif 'smiles_search_hbd' in from_form and 'smiles_search_hba' not in from_form:
                     sql = sql + 'WHERE HBD_SMILES = "%s" '%(from_form['HBD_SMILES'])
-                elif 'smiles_search_other' in from_form:
-                    if 'HBA_SMILES' not in from_form and 'HBD_SMILES' not in from_form:
+                if 'smiles_search_other' in from_form_keys:
+                    if 'HBA_SMILES' not in from_form_keys and 'HBD_SMILES' not in from_form_keys:
                         sql = sql + 'WHERE Other_SMILES = "%s" '%(from_form['Other_SMILES'])
                     else:
-                        sql = sql + 'And Other_SMILES = "%s" '%(from_form['Other_SMILES'])
+                        sql = sql + 'AND Other_SMILES = "%s" '%(from_form['Other_SMILES'])
                 
         if 'method' in from_form:
             met_id=0
@@ -1543,8 +1548,6 @@ def search_db():
         if ('property' not in sql and 'MW' not in sql) or len(keys)>1:
             counts = -1
         else:
-            if 'all' not in meta:
-                sql = sql + 'limit 50'
             print('Counts Query:\n',counts_q,'\n')
             cur.execute(counts_q)
             counts = cur.fetchall()
@@ -1602,9 +1605,9 @@ def search_db():
                         'n_res': n_res,
                         'all_dbs': all_dbs
                     }
-            if 'Other_MW' in from_form and len(sdb) != 0:
+            if 'Other_MW' in from_form and len(sdb.keys()) != 5:
                 sdb.update({'Other_MW_from': Other_MW_from, 'Other_MW_to': Other_MW_to})
-            elif 'Other_MW' in from_form and len(sdb) == 0:
+            elif 'Other_MW' in from_form and len(sdb.keys()) == 5:
                 sdb = {
                     'Other_MW_from': Other_MW_from,
                     'Other_MW_to': Other_MW_to,
@@ -1856,230 +1859,6 @@ def search_db():
                 }
         print('DES search completed!')
         # return(sdb)
-    if 'next-50' in meta:
-        nonext=False
-        n_res_done = 0
-        if ' offset' in sql:
-            # checking the offset in the previous sql query, n_res_done tells us how many results have been displayed already
-            n_res_done = int(sql[sql.rfind('offset')+7:-1])
-            sql = sql[:sql.rfind('offset')+6] + ' '+ str(n_res_done + 50) + ';'
-            n_res_done = n_res_done +50
-        else:
-            n_res_done = 50
-            sql = sql[:-1]+' offset ' +str(n_res_done)+';'
-        if ('property' not in sql and 'MW' not in sql) or len(keys)>1:
-            data = search_results[n_res_done:n_res_done+51]
-            columns = list(data.columns)
-            if len(keys)==0:
-                to_order = False
-            else:
-                columns=[c.replace('(NA/NA)','') for c in columns]
-                columns=[c.replace('(na/na)','') for c in columns]
-                columns=[c.replace('(NA)','') for c in columns]
-                columns=[c.replace('(na)','') for c in columns]
-                to_order = True
-        else:
-            to_order = True         
-            cur.execute(sql)
-            data1=cur.fetchall()
-            if 'molecule' in from_form.keys():
-                data, columns = post_process(sql, data1,'molecule')
-            elif 'des' in from_form.keys():
-                data, columns = post_process(sql, data1, 'des')
-        temp_col=[]
-        temp_met=[]
-        for c in columns:
-            if '-' in c:
-                temp_col.append(c.split('-')[0])
-                if len(c.split('-'))>2:
-                    temp_met.append(c.split('-')[1]+'-'+c.split('-')[2])
-                else:
-                    temp_met.append(c.split('-')[1])
-            else:
-                temp_col.append(c)
-                if 'MW' in c:
-                    temp_met.append('pybel')
-                else:
-                    temp_met.append('')
-        
-        desc=['','']
-        columns =[]
-        ini = n_res_done
-        if (counts - n_res_done) < 50: 
-            fin = counts
-            nonext = True
-        else:
-            nonext = False
-            fin = n_res_done + 50                
-        noprev=False
-        data = data.convert_dtypes()
-        if temp_met!=[]:
-            for i in range(len(temp_met)):
-                columns.append((temp_col[i],temp_met[i]))
-            property_names = []
-            for i in properties:
-                property_names.append(i[1])
-            data = data.convert_dtypes()
-            for i in data.columns:
-                if i in property_names:
-                    desc.append('mean={}, std={}, min={}, max={}'.format(data[i].describe()['mean'].round(2),data[i].describe()['std'].round(2),data[i].describe()['min'].round(2),data[i].describe()['max'].round(2)))
-        if 'order by' in sql:
-            if 'DESC' in sql:        
-                data=data.sort_values(by=data.columns[-1],ascending=False)
-            else:
-                data=data.sort_values(by=data.columns[-1])
-        data = tuple(data.itertuples(index=False,name=None))
-        if 'MW' in sql and 'value.property_id=' not in sql:
-            sdb = {
-                'ini': ini,
-                'fin': fin,
-                'to_order': to_order,
-                'noprev': False,
-                'nonext': nonext,
-                'data': data,
-                'properties': properties,
-                'columns': columns,
-                'temp_met': temp_met,
-                'methods': methods,
-                'n_res': n_res,
-                'basis': basis_sets,
-                'functionals': functionals,
-                'forcefields': forcefields,
-                'all_dbs': all_dbs,
-                'title': db,
-                'desc': desc
-            }
-        else:
-            sdb = {
-                'ini': ini,
-                'fin': fin,
-                'to_order': to_order,
-                'noprev': False,
-                'nonext': nonext,
-                'data': data,
-                'properties': properties,
-                'columns': columns,
-                'temp_met': temp_met,
-                'methods': methods,
-                'n_res': n_res,
-                'basis': basis_sets,
-                'functionals': functionals,
-                'forcefields': forcefields,
-                'all_dbs': all_dbs,
-                'title': db,
-                'desc': desc
-            }
-        print('Next 50 available!')
-        
-    elif 'prev-50' in meta:
-        noprev=False
-        n_res_done = 0
-        if ' offset' in sql:
-            # checking the offset in the previous sql query, this number tells us how many results have been displayed already
-            n_res_done = int(sql[sql.rfind('offset')+7:-1]) - 50
-            sql = sql[:sql.rfind('offset')+6] + ' '+str(n_res_done) +';'
-            noprev = False
-        if n_res_done ==0:
-            noprev = True
-            nonext = False
-        if('property' not in sql and 'MW' not in sql) or len(keys)>1:
-            data = search_results[n_res_done:n_res_done+51]
-            columns = list(data.columns)
-            if len(keys)==0:
-                to_order = False
-            else:
-                columns=[c.replace('(NA/NA)','') for c in columns]
-                columns=[c.replace('(na/na)','') for c in columns]
-                columns=[c.replace('(NA)','') for c in columns]
-                columns=[c.replace('(na)','') for c in columns]
-                to_order = True
-        else:
-            cur.execute(sql)
-            data1=cur.fetchall()
-            if 'molecule' in from_form.keys():
-                data, columns = post_process(sql, data1,'molecule')
-            elif 'des' in from_form.keys():
-                data, columns = post_process(sql, data1, 'des')
-        temp_col=[]
-        temp_met=[]
-
-        for c in columns:
-            if '-' in c:
-                temp_col.append(c.split('-')[0])
-                if len(c.split('-'))>2:
-                    temp_met.append(c.split('-')[1]+'-'+c.split('-')[2])
-                else:
-                    temp_met.append(c.split('-')[1])
-            else:
-                temp_col.append(c)
-                if 'MW' in c:
-                    temp_met.append('pybel')
-                else:
-                    temp_met.append('')
-        
-        desc = ['','']
-        columns = []
-        fin = n_res_done + 50
-        if temp_met!= []:
-            for i in range(len(temp_met)):
-                columns.append((temp_col[i],temp_met[i]))
-            property_names = []
-            for i in properties:
-                property_names.append(i[1])
-            data = data.convert_dtypes()
-            for i in data.columns:
-                if i in property_names:
-                    desc.append('mean={}, std={}, min={}, max={}'.format(data[i].describe()['mean'].round(2),data[i].describe()['std'].round(2),data[i].describe()['min'].round(2),data[i].describe()['max'].round(2)))
-        if 'order by' in sql:
-            if 'DESC' in sql:
-                data = data.sort_values(by=data.columns[-1],ascending=False)
-            else:
-                data = data.sort_values(by=data.columns[-1])
-        data = tuple(data.itertuples(index=False, name=None))
-        ini = n_res_done
-        if 'MW' in sql and 'value.property_id=' not in sql:
-            sdb = {
-                'ini': n_res_done,
-                'fin': fin,
-                'to_order': to_order,
-                'noprev': noprev,
-                'nonext': False,
-                'data': data,
-                'properties': properties,
-                'columns': columns,
-                'temp_met': temp_met,
-                'methods': methods,
-                'n_res': n_res,
-                'basis': basis_sets,
-                'functionals': functionals,
-                'forcefields': forcefields,
-                'all_dbs': all_dbs,
-                'title': db,
-                'desc': desc
-            }
-        else:
-            sdb = {
-                'ini': n_res_done,
-                'fin': fin,
-                'to_order': to_order,
-                'noprev': noprev,
-                'nonext': False,
-                'data': data,
-                'properties': properties,
-                'columns': columns,
-                'temp_met': temp_met,
-                'methods': methods,
-                'n_res': n_res,
-                'basis': basis_sets,
-                'functionals': functionals,
-                'forcefields': forcefields,
-                'all_dbs': all_dbs,
-                'title': db,
-                'desc': desc
-            }
-        print('Previous 50 available!')
-        #return(sdb)
-
     if 'download_csv' in meta or 'download_json' in meta:
         desc = ['','']
         print('Downloading results...')
@@ -2154,82 +1933,8 @@ def search_db():
         }
         print(msg)
         #return(sdb)
-    elif 'orderby_property' in meta:
-        ascending = True
-        if 'ascending' in from_form['select_order']:
-            if 'order by' not in sql:
-                if 'property' not in sql and 'MW' in sql:
-                    sql = sql[:sql.rindex('limit')] + ' order by molecule.MW ' +sql[sql.rindex('limit'):]
-                else:
-                    sql = sql[:sql.rindex(')')+1]+ ' order by Value.num_value ' + sql[sql.rindex(')')+1:]
-            elif 'order by' in sql and 'DESC' in sql:
-                if 'property' not in sql and 'MW' in sql:
-                    sql = sql[:sql.rindex('DESC')] + sql[sql.rindex('DESC')+5:]
-                else:
-                    sql = sql[:sql.rindex('value')+5] + ' ' + sql[sql.rindex('value')+11:]
-        else:
-            ascending = False
-            if 'order by' in sql and 'DESC' not in sql:
-                if 'property' not in sql and 'MW' in sql:
-                    sql = sql[:sql.rindex('MW')+3] + 'DESC ' + sql[sql.rindex('MW')+3:]   
-                else:               
-                    sql = sql[:sql.rindex('value')+5] + ' DESC' + sql[sql.rindex('value')+5:]
-            elif 'order by' not in sql:
-                if 'property' not in sql and 'MW' in sql:
-                    sql = sql[:sql.rindex('limit')] + ' order by molecule.MW DESC ' +sql[sql.rindex('limit'):]
-                else:
-                    sql = sql[:sql.rindex(')')+1]+ ' order by value.num_value DESC ' + sql[sql.rindex(')')+1:]
-        
-        if sql.count('value.num_value') > 4:
-            multiprop = True
-            sql = sql[:sql.rfind(')')+1]+';'
-        cur.execute(sql)
-        all_results = cur.fetchall()
-        if 'molecule' in from_form.keys():
-            data, columns = post_process(sql,all_results,'molecule')
-        elif 'des' in from_form.keys():
-            data, columns = post_process(sql,all_results,'des')
-        search_results = data
-        search_results.columns = columns
-        if 'MW' not in sql and 'property' in sql:
-            search_results = search_results.sort_values(by=from_form['property_orderby'], ascending = ascending)
-        desc=['','']
-        data = tuple(search_results[:50].itertuples(index=False,name=None))
-        for i in search_results.columns[2:]:
-            if '-' not in i:
-                if 'MW' in i:
-                    columns.append((i,'pybel'))
-                else:
-                    columns.append((i,''))
-            else:
-                if len(i.split('-')) > 2:
-                    columns.append((i.split('-')[0],i.split('-')[1]+'-'+i.split('-')[2]))
-                else:
-                    columns.append((i.split('-')[0],i.split('-')[1]))
-        sdb = {
-            'data': data,
-            'properties': properties,
-            'to_order': True,
-            'ini': ini,
-            'fin': fin,
-            'noprev': noprev,
-            'nonext': nonext,
-            'columns': columns,
-            'methods': methods,
-            'n_res': n_res,
-            'basis': basis_sets,
-            'functionals': functionals,
-            'forcefields': forcefields,
-            'all_dbs': all_dbs,
-            'title': db,
-            'desc': desc
-        }
-        print('Ordered by property!')
-        #return(sdb)
     cur.execute('SHOW DATABASES;')
     all_dbs = cur.fetchall()
-    
-    
     
     return render_template("search.html",sdb=sdb,all_dbs=all_dbs)
 
