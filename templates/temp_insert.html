@@ -44,13 +44,6 @@
       var str = '<tr><td><input name="2_prop" type="text" value="na" placeholder="na"></td>'
       str = str + '<td><input name="2_unit" type="text" value="na" placeholder="na"></td>'
       var i;
-      //for (i = 0; i < diff_cols.length; i++) {
-      //str = str + '<option id="cols_' + diff_cols[i] + '" name="cols_' + diff_cols[i] + '" value="' + diff_cols[i] + '">' + diff_cols[i] + '</option>'
-      //}
-      //str = str + '{% for prop in props %} <option id="cols_{{prop}}" name="cols_{{prop}}" value="{{prop}}">{{prop}} </option> {% endfor %} '
-      //str = str + '<tr></select></td><td><input name="2_prop" type="text" value="na"></td>'
-      //str = str +'<td><input name="2_unit" type="text" value="na" placeholder="na"></td></tr>'
-      //str = str + '<td> <input id=add_' + id + ' name="addrow" class="addbutton" type="button" onclick="addRow(' + id + ')" value="Add Row" style="background-color:#005bbb;color:#ffffff;font-family:Exo;"></td>'
       str = str + '<td> <input id=remove_' + id + ' name="removerow" class="removebutton" type="button" onclick="removeRow(this)" value="Remove Row" style="background-color#005bbb;color_+#ffffff;font-family:Exo;"></td></tr>'
       $('#md').append(str)
       console.log(id)
@@ -209,9 +202,18 @@
               <div class="form-group" sytle="font-family:Exo;">
                 <p>Is there molecular weight data stored in this csv file?</p>
                 <input name="mw_meta" type="radio" id="yes_mw" value="yes_mw" required>
-                <label for="mw_meta">Yes</label>
+                <label for="yes_mw">Yes</label>
                 <input name="mw_meta" type="radio" id="no_mw" value="no_mw" required>
                 <label for="no_mw">No</label>
+              </div>
+            </td>
+            <td>
+              <div class="form-group" style="font-family:Exo;">
+                <p>Are there many properties in the file?</p>
+                <input name="prop_num" type="radio" id="yes_many" value="yes_many" required>
+                <label for="yes_many">Yes</label>
+                <input name="prop_num" type="radio" id="no_many" value="no_many" required>
+                <label for="no_many">No</label>
               </div>
             </td>
             <td>
@@ -480,9 +482,27 @@
     {% if props %}
     <form name="meta-data" id="meta-data" action='' method="POST">
       <h4 style="font-family:Exo;">Step 2: Properties</h4>
-
-      <h5 style="font-family:Exo;">Select columns from your file which represent the properties you want to enter into
-        the database</h5>
+      {% if prop_num %}
+      <table id="md" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
+        <tr>
+          <td>
+            <h5 style="font-family:Exo;">Property Names</h5>
+          </td>
+          <td>
+            <h5 style="font-family:Exo;">Property Units</h5>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <textarea id="2_prop" name="2_prop" rows="5" cols="60" placeholder="Enter property column headings separated by commas here (required)" required></textarea>
+          </td>
+          <td>
+            <textarea id="2_unit" name="2_unit" rows="5" cols="60" placeholder="Enter corresponding units separated by commas here"></textarea>
+          </td>
+        </tr>
+      </table>
+      {% else %}
+      <h5 style="font-family:Exo;">Select columns from your file which represent the properties you want to enter into the database</h5>
       <table id="prop_spec1" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
         <col width="240">
         <col width="240">
@@ -535,6 +555,7 @@
           </td>
         </tr>
       </table>
+
       {% else %}
       <table id="md" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
         <tr>
@@ -569,6 +590,7 @@
           </td>
         </tr>
       </table>
+      {% endif %}
       {% endif %}
       {% if sim_status %}
       <table id="sim" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
