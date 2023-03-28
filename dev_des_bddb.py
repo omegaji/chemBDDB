@@ -376,10 +376,7 @@ def temp_insert():
             
             cols = list(data.columns)
             pybel_identifiers = {'smiles':'smi','standard_inchi_key':'inchikey','standard_inchi':'inchi'}
-            #prop_val = []
-            #unit_val = []
             molec_id = []
-            id_col_name = []
             mol_ids = {}
             for id in identifiers:
                 cur.execute('SELECT COUNT(DISTINCT '+ id +') FROM MOLECULE;')
@@ -523,9 +520,6 @@ def temp_insert():
                 elif 'mw' in key:
                     if value != ['cols_0A_MW','cols_0B_MW','cols_0O_MW']:
                         mw_cols.append(value)
-            #molecule_identifiers = list(chain(*molecule_identifiers))
-
-
             remaining_cols = []
             for i in cols:
                 if i not in molecule_identifiers:
@@ -537,8 +531,7 @@ def temp_insert():
                     snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','HBA_to_HBD_ratio','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
             else:
                 snapshot_cols = ['Molecule_Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
-            
-            
+                
             return render_template('temp_insert.html',props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta,is_tert=is_tert,prop_num=prop_num)
         except Exception :
             print(traceback.format_exc())
@@ -769,8 +762,6 @@ def temp_insert():
                 cur.execute("SELECT "+ ''.join(i.lower()+',' for i in mol_ids.keys())+"MW from Molecule")
                 molecules = cur.fetchall()
                 molecules = tuple(tuple(x) for x in molecules)
-                print(new_entries)
-                print(molecules)
                 required_entries = list(set(new_entries)-set(molecules))
                 if len(mol_ids.keys())>1:
                     mol_q = ''.join(i+',' for i in mol_ids.keys())
@@ -861,10 +852,10 @@ def temp_insert():
                     distinct_des_dict.update({i:distinct_des[i]})
                 
 
-                #print(molecule_id,'this is molecule_id')
+                
                 distinct_des_df = pd.DataFrame(distinct_des_dict)
                 distinct_des_df = distinct_des_df.T
-                #print(distinct_des_df[0],'this is distinct_des_df')
+                
                 distinct_des_df[0] = distinct_des_df[0].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
                 distinct_des_df[1] = distinct_des_df[1].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
                 if is_tert == True:
@@ -1116,7 +1107,6 @@ def search_db():
     if 'search-query-molecule' in meta:
         keys=[i for i in from_form if '_id' in i]
         min_max_err=False
-        min_max_prop=[]
         props=[]
         p = []
         # tuple of tuples to list of tuples
@@ -1137,6 +1127,7 @@ def search_db():
             #print(from_form)
             for k in keys:
                 prop_id = int(from_form[k])
+                print('prop_id:\n',prop_id,'\n')
                 props.append(prop_id)
                 from_val = float(from_form[k[:-3]+'_from_val'])
                 to_val = float(from_form[k[:-3]+'_to_val'])
@@ -1221,6 +1212,7 @@ def search_db():
                         'n_res': n_res,
                         'all_dbs': all_dbs
                     }
+                print('Count was equal to zero!\n')
         else:
             # executing the query
             print('\nMySQL search query: ')
@@ -1246,10 +1238,8 @@ def search_db():
                     temp_col.append(c)
             # substructure matching using pybel
             try:
-                smi_val = None
                 if 'smiles_search' in from_form:
                     smarts = pybel.Smarts(from_form['SMILES'])
-                    smi_val = smarts
                     for i in range(len(data)):
                         mol = pybel.readstring("smi",data.loc[i]['SMILES'])
                         smarts.obsmarts.Match(mol.OBMol)
