@@ -337,8 +337,7 @@ def temp_insert():
     """
     global is_tert,all_dbs, db, data_file, cur, data,mol_ids,con,snapshot,prop_type,prop_store,sim_status,mw_cols,mw_meta
     global des_status,methods_list,functionals_list,basis_list,forcefield_list, molecule_identifiers, molecule_identifiers_cols
-    global pybel_identifiers, molecule_id, mw_cols,remaining_cols,snapshot_cols
-    mi_cols = []
+    global pybel_identifiers, molecule_id, mw_cols,remaining_cols,snapshot_cols, prop_num
     cur.execute('show databases;')
     all_dbs_tup = cur.fetchall()
     
@@ -352,6 +351,7 @@ def temp_insert():
         try:
             config_options = request.form
             config_options=config_options.to_dict(flat=False)
+            print('config_options:\n',config_options,'\n')
             db = config_options['dbname'][0]
             files = request.files
             cur.execute('USE {}_chembddb;'.format(db))
@@ -483,18 +483,24 @@ def temp_insert():
                     mw_meta = True
                 else:
                     mw_meta = False
+                
+                prop_num = request.form['prop_num']
+                if prop_num == 'yes_many':
+                    prop_num = True
+                else:
+                    prop_num = False
 
                 if des_status == 'molecule':
                     des_status=False
-                    return render_template('temp_insert.html',all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                    return render_template('temp_insert.html',all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,prop_num=prop_num,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
                 else:
                     des_status=True
                     if is_tert=='tert':
                         is_tert = True
-                        return render_template('temp_insert.html',is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Other_Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                        return render_template('temp_insert.html',is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,prop_num=prop_num,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Other_Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
                     else:
                         is_tert = False
-                        return render_template('temp_insert.html',is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                        return render_template('temp_insert.html',is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,prop_num=prop_num,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
         except Exception:
             print(traceback.format_exc())
             return render_template('temp_insert.html',all_dbs=original_all_dbs,error=traceback.format_exc(limit=0),init='True',snapshot='')
@@ -502,6 +508,7 @@ def temp_insert():
         try:
             config_options = request.form
             config_options = config_options.to_dict(flat=False)
+            print('config_options:\n',config_options,'\n')
             molecule_identifiers_cols = []
             molecule_identifiers = []
             mw_cols = []
@@ -532,32 +539,44 @@ def temp_insert():
                 snapshot_cols = ['Molecule_Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields']
             
             
-            return render_template('temp_insert.html',props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta,is_tert=is_tert)
+            return render_template('temp_insert.html',props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta,is_tert=is_tert,prop_num=prop_num)
         except Exception :
             print(traceback.format_exc())
             if des_status == 'molecule':
                     des_status=False
-                    return render_template('temp_insert.html',error=traceback.format_exc(limit=0),all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                    return render_template('temp_insert.html',error=traceback.format_exc(limit=0),all_dbs=all_dbs,data_validated=True,des_status=False,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,prop_num=prop_num,cols = list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['Molecule Identifiers','Properties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
             else:
                 des_status=True
                 if is_tert == True:
                     return render_template('temp_insert.html',error=traceback.format_exc(limit=0),is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Other_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
                 else:
-                    return render_template('temp_insert.html',error=traceback.format_exc(limit=0),is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
+                    return render_template('temp_insert.html',error=traceback.format_exc(limit=0),is_tert=is_tert,all_dbs=all_dbs,data_validated=True,des_status=True,sim_status=sim_status,prop_store=prop_store,mw_meta=mw_meta,prop_num=prop_num,cols=list(data.columns),conf=conf,snapshot=snapshot,snapshot_cols = ['HBA_Identifiers','HBD_Identifiers','Porperties (Units)','Methods','Functionals','Basis Sets','Forcefields'])
     
     elif request.method == 'POST' and ('meta-data' in request.form or 'download-submit' in request.form):
         try:
             meta_data = request.form
             meta_data = meta_data.to_dict(flat=False)
+            print('meta_data\n',meta_data,'\n')
             
             property_list = meta_data['2_prop']
-            unit_list = meta_data['2_unit']
+            if prop_num == True:
+                property_list = property_list[0].split(',')
+            print(property_list)
+            if len(meta_data['2_unit']) == len(property_list):
+                unit_list = meta_data['2_unit']
+            else:
+                unit_list = ['']*len(property_list)
             if sim_status == True:
                 simu_data_columns = meta_data['sim_id_0']
             if prop_store == True:
                 property_columns = meta_data['prop_store_id_0']
             else:
-                property_columns = meta_data['prop_id_0']
+                try:
+                    property_columns = meta_data['prop_id_0']
+                except:
+                    property_columns=property_list
+            
+            
             mol_ids={}
             
             if des_status == True:
@@ -565,7 +584,7 @@ def temp_insert():
                 if is_tert == True:
                     full_id_col = data[molecule_identifiers[0][0]].values.tolist() + data[molecule_identifiers[0][1]].values.tolist() + data[molecule_identifiers[0][2]].values.tolist()
             else:
-                full_id_col = data[molecule_identifiers[0]].values.tolist()
+                full_id_col = data[molecule_identifiers[0][0]].values.tolist()
             get_id = full_id_col
             molec_id = []
             for id in get_id:
@@ -681,9 +700,7 @@ def temp_insert():
                     for i in data['forcefield']:
                         if i == v:
                             forcefield_id.append(k)
-            #return render_template('temp_insert.html',all_dbs=all_dbs,init=True,success_msg='Success')
-        
-        # elif request.method == 'POST' and ('final_md' in request.form):
+            
             # Add Molecules to Molecule Table
             new_entries = []
             row = []
@@ -746,12 +763,14 @@ def temp_insert():
                 for i in range(len(get_id)):
                     mw_data[get_id[i]] = mw[i]
                 for i in mw_data.keys():
-                    new_entries.append((i,mw_data[i]))
+                    new_entries.append((i,(*mw_data[i],)))
             if mw_meta == True:
                 # insert information into Molecule Table
                 cur.execute("SELECT "+ ''.join(i.lower()+',' for i in mol_ids.keys())+"MW from Molecule")
                 molecules = cur.fetchall()
                 molecules = tuple(tuple(x) for x in molecules)
+                print(new_entries)
+                print(molecules)
                 required_entries = list(set(new_entries)-set(molecules))
                 if len(mol_ids.keys())>1:
                     mol_q = ''.join(i+',' for i in mol_ids.keys())
@@ -787,10 +806,8 @@ def temp_insert():
             all_props = cur.fetchall()
             prop_id = dict(map(reversed,all_props)) # reversed so that keys are the names of the properties and values are the id numbers
             mol_q = 'ID,'+ list(mol_ids.keys())[0]
-            #print(mol_q,'This is mol_q')
             cur.execute("SELECT "+mol_q+" from Molecule")
             all_mols = cur.fetchall()
-            #print(all_mols,'this is all_mols')
             molecule_id = dict(map(reversed,all_mols))
             insert_df = pd.DataFrame()
             if prop_store == True:
@@ -814,19 +831,15 @@ def temp_insert():
                 insert_df['value'] = prop_val
             if des_status == False:
                 temp_df = pd.DataFrame({'molecule':get_id}) 
-                t=temp_df["molecule"].values
-            
-                temp_df['mol_ids'] = temp_df['molecule'].apply(lambda a: molecule_id[pybel.readstring('smi',a[0]).write('can').strip()])
+                print(molecule_id)
+                temp_df['mol_ids'] = temp_df['molecule'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
                 mol_ids_list = temp_df['mol_ids'].values.tolist()
                 insert_df['molecule_id'] = list(islice(cycle(mol_ids_list),len(insert_df)))
             else:
 
                 des = {}
                 distinct_des_dict = {}
-                #print(data.head())
                 des_col_info = np.concatenate(molecule_identifiers).flat
-                #print(des_col_info)
-                #print(data.loc[:,des_col_info].head())
 
                 hba_list = data[des_col_info[0]].values.tolist()
                 hbd_list = data[des_col_info[1]].values.tolist()
@@ -983,7 +996,7 @@ def temp_insert():
             return render_template('temp_insert.html',val_submit = True,all_dbs=all_dbs,msg="Values submitted successfully!")
         except Exception:
             print(traceback.format_exc())
-            return render_template('temp_insert.html',error=traceback.format_exc(limit=0),props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta)
+            return render_template('temp_insert.html',error=traceback.format_exc(limit=0),props=remaining_cols,prop_length=len(remaining_cols),all_dbs=all_dbs,title=db,snapshot=snapshot,snapshot_cols=snapshot_cols,prop_store=prop_store,des_status=des_status,sim_status=sim_status,mw_meta=mw_meta,prop_num=prop_num)
     else:
         # default landing page
         return render_template('temp_insert.html',all_dbs=all_dbs,init='True',snapshot='')
