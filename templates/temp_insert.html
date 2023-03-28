@@ -110,7 +110,9 @@
       document.getElementById(add).disabled = false
     }
 
-
+    function showMessage() {
+      alert("Values being submitted...\nThis may take a few seconds.");
+    }
   </script>
 </head>
 
@@ -629,7 +631,7 @@
       <table id="fin-submit" class="table table-bordered" border="0" style="align-content:center;font-family:Exo;">
         <tr>
           <td>
-            <button class="button" type="submit" name="meta-data" method="POST" class="btn btn-primary">Submit</button>
+            <button class="button" type="submit" name="meta-data" method="POST" class="btn btn-primary" onClick="showMessage()">Submit</button>
           </td>
         </tr>
       </table>
