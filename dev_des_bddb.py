@@ -226,7 +226,7 @@ def connect():
 
 @app.route('/setup',methods=['POST','GET'])
 def create_schema(host=-1,user='',pw='',db=''):
-    #print(host,user,pw,db)
+    
     """
     Calls connect_mysql function to connect user to MySQL server
     Creates database using ChemBDDB schema
@@ -1011,7 +1011,7 @@ def search():
 def search_db():
 
     """
-    Connects user to MySQL server
+    Searches database by property, SMILES, MW, model, basis set, forcefield, functional 
     Parameters
     ----------
     db: str
