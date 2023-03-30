@@ -822,7 +822,6 @@ def temp_insert():
                 insert_df['value'] = prop_val
             if des_status == False:
                 temp_df = pd.DataFrame({'molecule':get_id}) 
-                print(molecule_id)
                 temp_df['mol_ids'] = temp_df['molecule'].apply(lambda a: molecule_id[pybel.readstring('smi',a).write('can').strip()])
                 mol_ids_list = temp_df['mol_ids'].values.tolist()
                 insert_df['molecule_id'] = list(islice(cycle(mol_ids_list),len(insert_df)))
@@ -1127,7 +1126,7 @@ def search_db():
             #print(from_form)
             for k in keys:
                 prop_id = int(from_form[k])
-                print('prop_id:\n',prop_id,'\n')
+                #print('prop_id:\n',prop_id,'\n')
                 props.append(prop_id)
                 from_val = float(from_form[k[:-3]+'_from_val'])
                 to_val = float(from_form[k[:-3]+'_to_val'])
@@ -1351,7 +1350,6 @@ def search_db():
         # TODO: allow user to search by smiles or MW of HBA and HBD, ratio, property value
         keys = [i for i in from_form if '_id' in i]
         min_max_err = False
-        min_max_prop=[]
         props=[]
 
         p = []
@@ -1359,6 +1357,8 @@ def search_db():
         for pr in properties:
             p.append(list(pr))
         properties = p
+
+        # BELOW IS PROPERTY SEARCH
         if len(keys)>0:
             # TODO: add value and propery id
             # TODO: add in basis_set, functionals, model, forcefield
@@ -1391,7 +1391,6 @@ def search_db():
                 props.append(prop_id)
                 from_val=float(from_form[k[:-3]+'_from_val'])
                 to_val=float(from_form[k[:-3]+'_to_val'])
-                #print(prop_id)
                 properties[prop_id-1].append(from_val)
                 properties[prop_id-1].append(to_val)
                 if from_val > to_val:
@@ -1408,7 +1407,6 @@ def search_db():
                 else:
                     valsid = valsid + '(' + str(props[i])
             valsid = valsid + ')'
-            #print(valsid)
             sql =  sql + valsid + ' '
             counts_q = counts_q + valsid.replace('prop.','value.') + ';'
         else:
@@ -1427,12 +1425,16 @@ def search_db():
             sql = sql + 'INNER JOIN des_other on des_other.id = des.id '
             sql = sql + 'RIGHT JOIN prop on prop.des_id = des.id '
             sql = sql + 'where '
+
+            
+
+            
+
+
+        # BELOW IS MW SEARCH
+        from_form_keys = from_form.keys()
         HBA_MW_to = None
-        # sql = 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
-        # sql = sql + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id) '
-        # sql = sql + 'select des.id, des.HBA_id, des_hba.HBA_SMILES, des_hba.HBA_MW, des.HBD_id, des_hbd.HBD_SMILES, des_hbd.HBD_MW, ratio from des inner join des_hba on des_hba.id = des.id '
-        # sql = sql + 'inner join des_hbd on des_hbd.id = des.id '
-        if 'HBA_MW' in from_form:
+        if 'hba_mw_search' in from_form_keys:
             # search for des containing HBA by MW
             HBA_from_val=float(from_form['HBA_MW_from_val'])
             HBA_to_val=float(from_form['HBA_MW_to_val'])
@@ -1446,7 +1448,7 @@ def search_db():
                 sql = sql + 'des_hba.HBA_MW > {} and des_hba.HBA_MW < {} '.format(HBA_MW_from,HBA_MW_to)
                 keys.append('HBA_MW')
         HBD_MW_to = None
-        if 'HBD_MW' in from_form:
+        if 'hbd_mw_search' in from_form_keys:
             # search for des containing HBD by MW
             HBD_from_val=float(from_form['HBD_MW_from_val'])
             HBD_to_val=float(from_form['HBD_MW_to_val'])
@@ -1459,7 +1461,7 @@ def search_db():
             else:
                 sql = sql + 'des_hbd.HBD_MW > {} and des_hbd.HBD_MW < {} '.format(HBD_MW_from,HBD_MW_to)
                 keys.append('HBD_MW')
-        if 'Other_MW' in from_form:
+        if 'other_mw_search' in from_form_keys:
             # search for des containing Other by MW
             Other_from_val = float(from_form['Other_MW_from_val'])
             Other_to_val =float(from_form['Other_MW_to_val'])
@@ -1472,14 +1474,11 @@ def search_db():
             else:
                 sql = sql +'des_other.Other_MW > {} and des_other.Other_MW < {} '.format(Other_MW_from,Other_MW_to)
                 keys.append('Other_MW')
-        #print(from_form.keys())
-        from_form_keys = from_form.keys()
+        
+        # BELOW IS SMILES SEARCH CODE
         if 'smiles_search_hba' in from_form_keys or 'smiles_search_hbd' in from_form_keys or 'smiles_search_other' in from_form_keys:
-            #print('we are here:')
-            #print('this is from_form:', from_form)
 
             possible_smiles = ['HBA_SMILES','HBD_SMILES','Other_SMILES']
-
 
             if len(keys)==0:
                 sql= 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
@@ -1540,7 +1539,7 @@ def search_db():
             else:
                 sql=sql+' and Value.forcefield_id={}'.format(from_form['forcefield'])
         
-        if len(keys) <= 0 or 'HBA_MW' in from_form or 'HBD_MW' in from_form or 'Other_MW' in from_form:
+        if len(keys) <= 0 or 'hba_mw_search' in from_form_keys or 'hbd_mw_search' in from_form_keys or 'other_mw_search' in from_form_keys:
             counts_q= 'WITH des_hba AS (SELECT des.id, HBA_id, SMILES as HBA_SMILES, MW as HBA_MW FROM des INNER JOIN molecule on molecule.id = des.hba_id), '
             counts_q = counts_q + 'des_hbd AS (SELECT des.id, HBD_id, SMILES as HBD_SMILES, MW as HBD_MW FROM des INNER JOIN molecule on molecule.id = des.hbd_id), '
             counts_q = counts_q + 'des_other AS (SELECT des.id, Other_id, SMILES as Other_SMILES, MW as Other_MW from des INNER JOIN molecule on molecule.id = des.other_id), '
