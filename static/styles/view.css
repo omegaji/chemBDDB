@@ -1,13 +1,14 @@
 .view-container {
-    width: 50%;
+    width: 80%;
     position: relative;
-    left: 30%;
+    left: 18%;
     margin-top: 5%;
 }
 
 .view-table {
     background-color: #a4caf9;
-    width: 100%;
+    width: fit-content;
+    max-width: 70%;
     margin: 0 auto;
     margin-top: 10%;
     border-radius: 1rem;
@@ -15,4 +16,9 @@
     height: fit-content;
     padding: 1rem;
 
+}
+
+#search-table-table {
+    width: 100% !important;
+    overflow: auto;
 }

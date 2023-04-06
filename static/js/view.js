@@ -1,4 +1,8 @@
+// delete this variable its for debugging
+var global;
+
 // function to get tables of selected database
+
 const getTableNames = async () => {
     let selectElement = document.getElementsByName("table_selected")[0]
     const selectedVal = document.getElementsByName("db_selected")[0].value
@@ -67,14 +71,15 @@ const generateTable = (div, sdb) => {
 
     $('#search-table-table').DataTable(
         { "lengthMenu": [5, 10, 15], scrollX: true, }
-    );
+    )
 
 }
-const fetchTable = (e) => {
+const fetchTable = async (e) => {
     e.preventDefault();
     let selectedVal = document.getElementsByName("table_selected")[0].value
     let dbName = document.getElementsByName("db_selected")[0].value
     let dispTableElement = document.getElementById("view-table")
+    dispTableElement.innerHTML = "Please wait ⏱️ loading the table, if you are seeing this then its a big table!"
     fetch("/fetchTable", {
         method: "POST",
         body: JSON.stringify({ "table_name": selectedVal, "db_name": dbName }),
@@ -84,6 +89,8 @@ const fetchTable = (e) => {
     })
         .then((res) => res.json())
         .then((res) => {
+            console.log(res)
+            global = res;
             generateTable(dispTableElement, res)
         })
 }

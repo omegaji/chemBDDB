@@ -2055,7 +2055,10 @@ def fetchTableNames():
     WHERE table_schema = '%s';
     '''%db)
     result=cur.fetchall()
-    cols=[x[0] for x in result]
+    cols=[]
+    for x in result:
+        if x[0]!="value":
+            cols.append(x[0])
     return jsonify({
         "cols":cols
     })
