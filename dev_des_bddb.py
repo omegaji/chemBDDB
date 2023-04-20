@@ -1,5 +1,6 @@
 from flask import Flask, render_template, url_for, request, redirect,jsonify
 from werkzeug.utils import secure_filename
+import hashlib
 import pymysql
 import pandas as pd
 import numpy as np
@@ -26,7 +27,6 @@ all_dbs = []
 app = Flask(__name__)
 upload_directory = os.getcwd()
 app.config['UPLOAD FOLDER']=upload_directory
-
 def post_process(sql, from_db,meta):
     """
     Helper function to post process the results from the database
@@ -1951,16 +1951,22 @@ def show_databases():
         all databases
     
     """
+    
     cur.execute("SHOW DATABASES LIKE '%_chembddb';")
     all_dbs = cur.fetchall()
-    
+    form=request.form
+    if "adminPass" in form :        
+        if hashlib.sha256(form["adminPass"].encode()).hexdigest()=="e1f5260810e540b89bc4488716f7f6e2ff5847cdd977f3da95bbcd9a4ee3a617":
+            return render_template("delete.html",all_dbs=all_dbs,isAdmin=True)
+        else:
+            return render_template("delete.html",isAdmin=False, err=True)
+ 
     if request.method=="POST":
-        form=request.form
-        print(form)
         if form["db_delete"]=="YES":
             all_dbs=drop_database(form["db_selected"])
-            return render_template("delete.html",all_dbs=all_dbs)
-    return render_template("delete.html",all_dbs=all_dbs)
+            return render_template("delete.html",all_dbs=all_dbs,isAdmin=True)
+    
+    return render_template("delete.html",isAdmin=False)
 
 def drop_database(db):
     """

@@ -4,11 +4,3 @@
     position: relative;
     left: 10%;
 }
-
-.error {
-
-    font-size: 1rem !important;
-    width: fit-content;
-    position: absolute;
-    left: 20%;
-}

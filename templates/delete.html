@@ -29,6 +29,9 @@
     </div>
     <div class="delete-container">
         <div>
+            {% if isAdmin%}
+
+
             {% if all_dbs%}
             <form name="delete_form" method="post" action="/delete">
                 <div class="form-group">
@@ -46,7 +49,18 @@
             </form>
 
             {%endif%}
-
+            {%else%}
+            <form name="admin_form" method="post" action="/delete">
+                <div class="form-group">
+                    <p>🔑 Only Admins are allowed on this route, please enter the Admin password</p>
+                    <input type="password" name="adminPass" required>
+                    <button class="button">Submit</button>
+                </div>
+            </form>
+            {%if err%}
+            <span class="error alert-danger">Wrong password</span>
+            {%endif%}
+            {%endif%}
         </div>
     </div>
 
